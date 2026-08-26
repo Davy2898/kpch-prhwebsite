@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Edit' if user else 'New' }} Admin User - Admin{% endblock %}
+{% block content %}
+  <div class="admin-page">
+    <div class="flex items-center justify-between mb-6">
+      <h2 class="text-2xl font-semibold">{{ 'Edit' if user else 'New' }} Admin User</h2>
+      <a class="text-sm text-blue-600 hover:underline" href="{{ url_for('admin.users_list') }}">Back to Users</a>
+    </div>
+    <form method="post" class="space-y-6 max-w-2xl rounded-xl border border-slate-200 dark:border-slate-700 bg-white/90 dark:bg-slate-900/50 shadow p-6">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Username</label>
+          <input class="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white/90 dark:bg-slate-900/60 px-3 py-2 outline-none focus:ring-4 focus:ring-emerald-500/30 focus:border-emerald-500" type="text" name="AdminUserName" value="{{ user.AdminUserName if user else '' }}" {% if user %}readonly{% else %}required{% endif %} />
+          {% if user %}<p class="text-xs text-slate-500 mt-1">Username cannot be changed.</p>{% endif %}
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Email</label>
+          <input class="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white/90 dark:bg-slate-900/60 px-3 py-2 outline-none focus:ring-4 focus:ring-emerald-500/30 focus:border-emerald-500" type="email" name="AdminEmailId" value="{{ user.AdminEmailId if user else '' }}" />
+        </div>
+      </div>
+      {% if not user %}
+      <div>
+        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Password</label>
+        <input class="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white/90 dark:bg-slate-900/60 px-3 py-2 outline-none focus:ring-4 focus:ring-emerald-500/30 focus:border-emerald-500" type="password" name="password" required />
+      </div>
+      {% else %}
+      <div>
+        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">User Type</label>
+        <select class="w-full sm:w-48 rounded-lg border border-slate-200 dark:border-slate-700 bg-white/90 dark:bg-slate-900/60 px-3 py-2 outline-none focus:ring-4 focus:ring-emerald-500/30 focus:border-emerald-500" name="userType">
+          <option value="1" {% if user.userType == 1 %}selected{% endif %}>Admin</option>
+          <option value="2" {% if user.userType == 2 %}selected{% endif %}>Editor</option>
+        </select>
+      </div>
+      {% endif %}
+      <div class="flex items-center gap-3 pt-2">
+        <button class="inline-flex items-center gap-1 rounded-md border border-emerald-700/20 bg-emerald-600 text-white hover:bg-emerald-700 px-4 py-2 text-sm font-medium shadow-sm" type="submit">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-4 w-4"><path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 0 1 .143 1.052l-7.5 9.5a.75.75 0 0 1-1.094.077l-4-4a.75.75 0 1 1 1.06-1.06l3.38 3.38 6.988-8.853a.75.75 0 0 1 1.023-.096Z" clip-rule="evenodd"/></svg>
+          <span>Save</span>
+        </button>
+        <a href="{{ url_for('admin.users_list') }}" class="inline-flex items-center gap-1 rounded-md border border-slate-200 dark:border-slate-700 px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-4 w-4"><path fill-rule="evenodd" d="M12.03 4.97a.75.75 0 0 1 0 1.06L9.06 9l2.97 2.97a.75.75 0 0 1-1.06 1.06l-3.5-3.5a.75.75 0 0 1 0-1.06l3.5-3.5a.75.75 0 0 1 1.06 0Z" clip-rule="evenodd"/></svg>
+          <span>Cancel</span>
+        </a>
+      </div>
+    </form>
+  </div>
+{% endblock %}

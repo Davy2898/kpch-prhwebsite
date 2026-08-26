@@ -1,0 +1,11 @@
+.env
+docker.env
+.npm-cache/
+.uv-cache/
+.uv-python/
+.venv/
+.venv-win/
+node_modules/
+instance/
+__pycache__/
+*.py[cod]

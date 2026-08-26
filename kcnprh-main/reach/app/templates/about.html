@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% block title %}About Us - មន្ទីរពេទ្យខេត្តកំពង់ឆ្នាំង{% endblock %}
+{% block content %}
+  <section class="max-w-10xl mx-auto px-4 py-8 md:py-12">
+    <h1 class="text-3xl sm:text-4xl font-bold tracking-tight text-slate-900 dark:text-slate-100">រចនាសម្ពន្ធ័</h1>
+    <div class="mt-8 mb-6 h-px bg-slate-200 dark:bg-slate-700"></div>
+
+    <div class="space-y-8">
+      <!-- Director on top -->
+      <div class="flex justify-center">
+        <div tabindex="0" class="rounded-xl border border-slate-200 dark:border-slate-700 bg-white/90 dark:bg-slate-900/50 shadow hover:shadow-md hover:-translate-y-0.5 transition-transform transition-shadow duration-200 p-6 text-center w-full sm:max-w-sm leading-relaxed focus-visible:ring-2 focus-visible:ring-emerald-500 outline-none">
+          <img class="w-32 aspect-[3/4] mx-auto object-cover object-center shadow-md" src="{{ url_for('static', filename='img/tumsabath.png') }}" alt="Dr. Tum Sambath" />
+          <h3 class="mt-4 leading-loose">
+            <span class="block font-bold">លោកវេជ្ជបណ្ឌិត. ទុំ សម្បត្តិ</span>
+            <span class="block text-slate-500 dark:text-slate-400">Dr. Tum Sambath</span>
+          </h3>
+          <span class="inline-block mt-3 px-3 py-1 text-s font-medium rounded-full bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">ប្រធានមន្ទីរពេទ្យ / Director</span>
+        </div>
+      </div>
+
+      <!-- Vice Directors grid -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
+       
+        <div tabindex="0" class="rounded-xl border border-slate-200 dark:border-slate-700 bg-white/90 dark:bg-slate-900/50 shadow hover:shadow-md hover:-translate-y-1 transition-transform transition-shadow duration-200 p-6 text-center leading-relaxed focus-visible:ring-2 focus-visible:ring-blue-500 outline-none">
+          <img class="w-32 aspect-[3/4] mx-auto object-cover object-center shadow-md" src="{{ url_for('static', filename='img/sokkong.png') }}" alt="Dr. Sok Kong" />
+          <h3 class="mt-3 leading-loose">
+            <span class="block font-semibold">លោកវេជ្ជបណ្ឌិត. សុខ គង់</span>
+            <span class="block text-slate-500 dark:text-slate-400">Dr. Sok Kong</span>
+          </h3>
+          <span class="inline-block mt-2 px-3 py-1 text-s font-medium rounded-full bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">អនុប្រធានមន្ទីរពេទ្យ / Vice Director</span>
+        </div>
+
+        <div tabindex="0" class="rounded-xl border border-slate-200 dark:border-slate-700 bg-white/90 dark:bg-slate-900/50 shadow hover:shadow-md hover:-translate-y-1 transition-transform transition-shadow duration-200 p-6 text-center leading-relaxed focus-visible:ring-2 focus-visible:ring-blue-500 outline-none">
+          <img class="w-32 aspect-[3/4] mx-auto object-cover object-center shadow-md" src="{{ url_for('static', filename='img/vorntheavy.png') }}" alt="Dr. Vorn Theavy" />
+          <h3 class="mt-3 leading-loose">
+            <span class="block font-semibold">លោកវេជ្ជបណ្ឌិត. វន ធានវី</span>
+            <span class="block text-slate-500 dark:text-slate-400">Dr. Vorn Theavy</span>
+          </h3>
+          <span class="inline-block mt-2 px-3 py-1 text-s font-medium rounded-full bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">អនុប្រធានមន្ទីរពេទ្យ / Vice Director</span>
+        </div>
+
+
+        <div tabindex="0" class="rounded-xl border border-slate-200 dark:border-slate-700 bg-white/90 dark:bg-slate-900/50 shadow hover:shadow-md hover:-translate-y-1 transition-transform transition-shadow duration-200 p-6 text-center leading-relaxed focus-visible:ring-2 focus-visible:ring-blue-500 outline-none">
+          <img class="w-32 aspect-[3/4] mx-auto object-cover object-center shadow-md" src="{{ url_for('static', filename='img/heingnarath.png') }}" alt="Dr. Hing Narath" />
+          <h3 class="mt-3 leading-loose">
+            <span class="block font-semibold">លោកស្រីវេជ្ជបណ្ឌិត. ហ៊ីង ណារ៉ាត់</span>
+            <span class="block text-slate-500 dark:text-slate-400">Dr. Hing Narath</span>
+          </h3>
+          <span class="inline-block mt-2 px-3 py-1 text-s font-medium rounded-full bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">អនុប្រធានមន្ទីរពេទ្យ / Vice Director</span>
+        </div>
+
+        <div tabindex="0" class="rounded-xl border border-slate-200 dark:border-slate-700 bg-white/90 dark:bg-slate-900/50 shadow hover:shadow-md hover:-translate-y-1 transition-transform transition-shadow duration-200 p-6 text-center leading-relaxed focus-visible:ring-2 focus-visible:ring-blue-500 outline-none">
+          <img class="w-32 aspect-[3/4] mx-auto object-cover object-center shadow-md" src="{{ url_for('static', filename='img/oukmulyvann.jpg') }}" alt="Dr. Ouk Molyvann" />
+          <h3 class="mt-3 leading-loose">
+            <span class="block font-semibold">លោកស្រីវេជ្ជបណ្ឌិត. អ៊ុក ម៉ូលីវណ្ណ</span>
+            <span class="block text-slate-500 dark:text-slate-400">Dr. Ouk Molyvann</span>
+          </h3>
+          <span class="inline-block mt-2 px-3 py-1 text-s font-medium rounded-full bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">អនុប្រធានមន្ទីរពេទ្យ / Vice Director</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-10 mb-6 h-px bg-slate-200 dark:bg-slate-700"></div>
+    <h1 id="mission" class="text-2xl font-semibold text-slate-900 dark:text-slate-100">បេសកម្ម</h1>
+    <div class="mt-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white/90 dark:bg-slate-900/50 shadow p-6">
+      <p class="text-slate-700 dark:text-slate-300 leading-relaxed">
+        មន្ទីរពេទ្យខេត្តកំពង់ឆ្នាំង ផ្តល់សេវាសុខភាពប្រកបដោយគុណភាព និងសុវត្ថិភាពស្របទៅតាមស្តង់ដារនៃការ
+        ទទួលស្គាល់គុណភាពមន្ទីរពេទ្យនៃព្រះរាជាណាចក្រកម្ពុជា។
+      </p>
+    </div>
+
+    <div class="mt-10 mb-6 h-px bg-slate-200 dark:bg-slate-700"></div>
+    <h1 id="vision" class="text-2xl font-semibold text-slate-900 dark:text-slate-100">ចក្ខុវិស័យ</h1>
+    <div class="mt-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white/90 dark:bg-slate-900/50 shadow p-6">
+      <p class="text-slate-700 dark:text-slate-300 leading-relaxed">
+        មន្ទីរពេទ្យខេត្តកំពង់ឆ្នាំង នឹងក្លាយជាមន្ទីរពេទ្យផ្តល់សេវាសុខភាពស្របតាមស្តង់ដារនៃការទទួលស្គាល់គុណ
+        ភាពមន្ទីរពេទ្យនៃព្រះរាជាណាចក្រកម្ពុជា។
+      </p>
+    </div>
+
+    <div class="mt-10 mb-6 h-px bg-slate-200 dark:bg-slate-700"></div>
+    <h1 id="values" class="text-2xl font-semibold text-slate-900 dark:text-slate-100">គុណតម្លៃ</h1>
+    <div class="mt-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white/90 dark:bg-slate-900/50 shadow p-6">
+      <ul class="list-disc pl-5 space-y-1 text-slate-700 dark:text-slate-300 leading-relaxed">
+        <li>ក្រមសីលធម៌វិជ្ជាជីវៈ</li>
+        <li>តម្លាភាព</li>
+        <li>ការប្តេជ្ញាចិត្ត ក្នុងការលើកកម្ពស់គុណភាព</li>
+        <li>សមធម៌</li>
+        <li>ការបើកចិត្តទូលាយ</li>
+      </ul>
+    </div>
+  </section>
+{% endblock %}

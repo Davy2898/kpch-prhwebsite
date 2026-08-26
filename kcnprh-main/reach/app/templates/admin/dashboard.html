@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Admin Dashboard - Reach{% endblock %}
+{% block content %}
+  <div class="admin-page">
+  <div class="flex items-center justify-between mb-6">
+    <h2 class="text-2xl font-semibold">Admin Dashboard</h2>
+    <a href="{{ url_for('admin.posts_create') }}" class="inline-flex items-center px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700">+ Create Post</a>
+  </div>
+  {% if stats %}
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+      <div class="p-4 rounded border bg-white/50 dark:bg-slate-800/50"><div class="text-sm text-slate-500">Posts</div><div class="text-2xl font-semibold">{{ stats.posts }}</div></div>
+      <div class="p-4 rounded border bg-white/50 dark:bg-slate-800/50"><div class="text-sm text-slate-500">Categories</div><div class="text-2xl font-semibold">{{ stats.categories }}</div></div>
+      <div class="p-4 rounded border bg-white/50 dark:bg-slate-800/50"><div class="text-sm text-slate-500">Subcategories</div><div class="text-2xl font-semibold">{{ stats.subcategories }}</div></div>
+      <div class="p-4 rounded border bg-white/50 dark:bg-slate-800/50"><div class="text-sm text-slate-500">Pages</div><div class="text-2xl font-semibold">{{ stats.pages }}</div></div>
+      <div class="p-4 rounded border bg-white/50 dark:bg-slate-800/50"><div class="text-sm text-slate-500">Comments pending</div><div class="text-2xl font-semibold">{{ stats.comments_pending }}</div></div>
+    </div>
+  {% endif %}
+  <nav class="admin-nav">
+    <ul class="flex flex-wrap gap-3 text-sm">
+      <li><a class="px-3 py-2 rounded border hover:bg-slate-100 dark:hover:bg-slate-700" href="{{ url_for('admin.posts_list') }}">Posts</a></li>
+      <li><a class="px-3 py-2 rounded border hover:bg-slate-100 dark:hover:bg-slate-700" href="{{ url_for('admin.categories_list') }}">Categories</a></li>
+      <li><a class="px-3 py-2 rounded border hover:bg-slate-100 dark:hover:bg-slate-700" href="{{ url_for('admin.subcategories_list') }}">Subcategories</a></li>
+      <li><a class="px-3 py-2 rounded border hover:bg-slate-100 dark:hover:bg-slate-700" href="{{ url_for('admin.pages_list') }}">Pages</a></li>
+      <li><a class="px-3 py-2 rounded border hover:bg-slate-100 dark:hover:bg-slate-700" href="{{ url_for('admin.comments_list') }}">Comments</a></li>
+      <li><a class="px-3 py-2 rounded border hover:bg-slate-100 dark:hover:bg-slate-700" href="{{ url_for('admin.users_list') }}">Admin Users</a></li>
+      <li><a class="px-3 py-2 rounded border hover:bg-slate-100 dark:hover:bg-slate-700" href="{{ url_for('admin.logout') }}">Logout</a></li>
+      <li><a class="px-3 py-2 rounded border hover:bg-slate-100 dark:hover:bg-slate-700" href="/">Back to site</a></li>
+    </ul>
+  </nav>
+  </div>
+{% endblock %}

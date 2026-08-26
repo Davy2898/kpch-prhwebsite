@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+{% block title %}{{ post.PostTitle }} - មន្ទីរពេទ្យខេត្តកំពង់ឆ្នាំង{% endblock %}
+{% block content %}
+  <article class="max-w-8xl mx-auto bg-white/90 dark:bg-slate-900/50 rounded-xl border border-slate-200 dark:border-slate-700 p-6 shadow-sm">
+    <nav class="text-sm text-slate-500"><a class="hover:text-emerald-600" href="{{ url_for('public.home') }}">Home</a> <span class="mx-1">/</span> {% if post.category %}<a class="hover:text-emerald-600" href="{{ url_for('public.category_view', category_id=post.CategoryId or post.category.id) }}">{{ post.category.CategoryName }}</a> <span class="mx-1">/</span>{% endif %} <span class="text-slate-700 dark:text-slate-300">Detail</span></nav>
+    <h1 class="post-title mt-2 text-3xl tracking-tight leading-relaxed text-slate-900 dark:text-slate-100">{{ post.PostTitle }}</h1>
+    {% if post.category %}
+      <div class="mt-2 flex items-center gap-3 text-sm">
+        <span class="inline-block text-xs font-medium px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700">{{ post.category.CategoryName if post.category else '' }}</span>
+        {% if post.PostingDate %}
+          <time class="text-slate-500" datetime="{{ post.PostingDate.isoformat() if post.PostingDate else '' }}">{{ post.PostingDate.strftime('%b %d, %Y') }}</time>
+        {% endif %}
+      </div>
+      <div class="mt-4 h-px bg-slate-200 dark:bg-slate-700"></div>
+    {% endif %}
+    {% if post.PostImage %}
+      <figure class="mt-6">
+        <img class="w-full object-cover rounded-lg shadow" src="{{ url_for('static', filename='uploads/' ~ post.PostImage) }}" alt="{{ post.PostTitle }}" />
+      </figure>
+    {% endif %}
+    <div class="mt-6 leading-relaxed text-[1.5rem] text-slate-800 dark:text-slate-200 space-y-4">{{ post.PostDetails|safe }}</div>
+    <div class="mt-8 flex items-center gap-2">
+      <span class="text-sm text-slate-500">Share:</span>
+      {% set post_url = url_for('public.post_detail', post_id=post.id, _external=True) %}
+      <a id="shareFacebook" class="inline-flex items-center gap-1 text-sm px-3 py-1.5 rounded-md border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800"
+         href="https://www.facebook.com/sharer/sharer.php?u={{ post_url | urlencode }}" rel="noopener noreferrer" aria-label="Share to Facebook">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="h-4 w-4"><path d="M22 12a10 10 0 1 0-11.563 9.874v-6.987H7.898V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.242 0-1.63.772-1.63 1.562V12h2.773l-.443 2.887h-2.33v6.987A10.002 10.002 0 0 0 22 12Z"/></svg>
+        <span>Facebook</span>
+      </a>
+      <button id="nativeShareBtn" type="button"
+              class="inline-flex items-center gap-1 text-sm px-3 py-1.5 rounded-md border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800"
+              data-url="{{ post_url }}" data-title="{{ post.PostTitle }}" aria-label="Share">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="h-4 w-4"><path d="M13 5.828V16a1 1 0 1 1-2 0V5.828L7.879 8.95A1 1 0 0 1 6.465 7.536l5.657-5.657a1 1 0 0 1 1.414 0l5.657 5.657A1 1 0 1 1 18.879 8.95L13 3.07Z"/><path d="M4 13a1 1 0 0 1 2 0v5h12v-5a1 1 0 1 1 2 0v6a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-6Z"/></svg>
+        <span>Share</span>
+      </button>
+      <a class="inline-flex items-center gap-1 text-sm px-3 py-1.5 rounded-md border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800"
+         href="https://twitter.com/intent/tweet?text={{ post.PostTitle | urlencode }}&url={{ post_url | urlencode }}" target="_blank" rel="noopener noreferrer" aria-label="Share to X">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="h-4 w-4"><path d="M18.243 2H21l-6.64 7.585L22.5 22h-6.89l-5.39-7.023L3.5 22H1l7.11-8.121L1 2h6.97l4.9 6.47L18.243 2Zm-1.206 18h1.36L7.053 4H5.61l11.427 16Z"/></svg>
+        <span>X</span>
+      </a>
+      <button id="copyLinkBtn" type="button"
+              class="inline-flex items-center gap-1 text-sm px-3 py-1.5 rounded-md border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800"
+              data-url="{{ post_url }}" aria-label="Copy link">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="h-4 w-4"><path d="M16 1H4c-1.103 0-2 .897-2 2v12h2V3h12V1z"/><path d="M20 5H8c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2h12c1.103 0 2-.897 2-2V7c0-1.103-.897-2-2-2zm0 16H8V7h12v14z"/></svg>
+        <span id="copyLinkText">Copy link</span>
+      </button>
+      <span id="copyLinkStatus" class="ml-1 text-xs text-emerald-600 hidden" aria-live="polite">Copied!</span>
+    </div>
+    <script>
+      (function(){
+        // Facebook app deep link on mobile with fallback to web sharer
+        const fbLink = document.getElementById('shareFacebook');
+        if (fbLink) {
+          fbLink.addEventListener('click', function(e){
+            const ua = navigator.userAgent || '';
+            const isMobile = /Android|iPhone|iPad|iPod/i.test(ua);
+            const webSharer = fbLink.getAttribute('href');
+            if (!isMobile) {
+              // Desktop: default to web sharer in same tab
+              return;
+            }
+            e.preventDefault();
+            // Try opening Facebook app via facewebmodal deep link
+            const deepUrl = 'fb://facewebmodal/f?href=' + encodeURIComponent(webSharer);
+            let opened = false;
+            const timer = setTimeout(() => {
+              if (!opened) {
+                window.location.href = webSharer; // fallback to browser sharer
+              }
+            }, 700);
+            // Attempt to open app
+            const iframe = document.createElement('iframe');
+            iframe.style.display = 'none';
+            iframe.src = deepUrl;
+            document.body.appendChild(iframe);
+            // Heuristic: assume opened if page becomes hidden soon after
+            const visHandler = () => { opened = document.hidden; };
+            document.addEventListener('visibilitychange', visHandler, { once: true });
+            // Clean up
+            setTimeout(() => { document.body.removeChild(iframe); }, 1500);
+          });
+        }
+
+        const btn = document.getElementById('copyLinkBtn');
+        if (!btn) return;
+        const textSpan = document.getElementById('copyLinkText');
+        const status = document.getElementById('copyLinkStatus');
+        btn.addEventListener('click', async () => {
+          const url = btn.getAttribute('data-url');
+          try {
+            await navigator.clipboard.writeText(url);
+            if (textSpan) textSpan.textContent = 'Copied';
+            if (status) status.classList.remove('hidden');
+            setTimeout(() => {
+              if (textSpan) textSpan.textContent = 'Copy link';
+              if (status) status.classList.add('hidden');
+            }, 2000);
+          } catch (e) {
+            // Fallback: select and copy using a hidden input
+            const input = document.createElement('input');
+            input.value = url;
+            document.body.appendChild(input);
+            input.select();
+            try { document.execCommand('copy'); } catch(_){}
+            document.body.removeChild(input);
+            if (textSpan) textSpan.textContent = 'Copied';
+            if (status) status.classList.remove('hidden');
+            setTimeout(() => {
+              if (textSpan) textSpan.textContent = 'Copy link';
+              if (status) status.classList.add('hidden');
+            }, 2000);
+          }
+        });
+
+        // Native share (Web Share API) if available
+        const shareBtn = document.getElementById('nativeShareBtn');
+        if (shareBtn && navigator.share) {
+          shareBtn.addEventListener('click', async () => {
+            try {
+              await navigator.share({
+                title: shareBtn.getAttribute('data-title') || document.title,
+                url: shareBtn.getAttribute('data-url')
+              });
+            } catch (_) { /* user cancelled or not available */ }
+          });
+        } else if (shareBtn) {
+          // Hide the button if Web Share API isn't supported
+          shareBtn.style.display = 'none';
+        }
+      })();
+    </script>
+  </article>
+
+  <section class="max-w-3xl mx-auto mt-10">
+    <h2 class="text-xl font-semibold text-slate-900 dark:text-slate-100">Comments</h2>
+    <ul class="mt-4 space-y-4">
+      {% for c in comments %}
+        <li class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white/80 dark:bg-slate-900/50 p-4">
+          <p class="text-sm text-slate-600 dark:text-slate-400">
+            <span class="font-medium text-slate-800 dark:text-slate-200">{{ c.name }}</span>
+            <small class="ml-2">{{ c.postingDate.strftime('%Y-%m-%d %H:%M') if c.postingDate else '' }}</small>
+          </p>
+          <p class="mt-1 text-slate-800 dark:text-slate-200">{{ c.comment }}</p>
+        </li>
+      {% else %}
+        <li class="text-slate-600 dark:text-slate-400">No comments yet.</li>
+      {% endfor %}
+    </ul>
+
+    <h3 class="mt-8 text-lg font-semibold text-slate-900 dark:text-slate-100">Leave a comment</h3>
+    <form action="{{ url_for('public.submit_comment', post_id=post.id) }}" method="post" class="mt-4 grid grid-cols-1 gap-4">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+      <div>
+        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">Name</label>
+        <input class="mt-1 w-full rounded-md border border-slate-300 dark:border-slate-600 bg-white/90 dark:bg-slate-900/60 px-3 py-2 text-sm outline-none focus:ring-4 focus:ring-emerald-500/30 focus:border-emerald-500" type="text" name="name" required />
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">Email</label>
+        <input class="mt-1 w-full rounded-md border border-slate-300 dark:border-slate-600 bg-white/90 dark:bg-slate-900/60 px-3 py-2 text-sm outline-none focus:ring-4 focus:ring-emerald-500/30 focus:border-emerald-500" type="email" name="email" required />
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">Comment</label>
+        <textarea class="mt-1 w-full rounded-md border border-slate-300 dark:border-slate-600 bg-white/90 dark:bg-slate-900/60 px-3 py-2 text-sm outline-none focus:ring-4 focus:ring-emerald-500/30 focus:border-emerald-500" name="comment" rows="4" required></textarea>
+      </div>
+      <div>
+        <button class="inline-flex items-center gap-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-sm px-4 py-2 shadow" type="submit">Submit</button>
+      </div>
+    </form>
+  </section>
+{% endblock %}

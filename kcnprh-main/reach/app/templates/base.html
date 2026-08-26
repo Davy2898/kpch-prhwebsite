@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{% block title %}មន្ទីរពេទ្យខេត្តកំពង់ឆ្នាំង{% endblock %}</title>
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='img/logo.svg') }}" />
+    <meta name="theme-color" content="#121833" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Khmer body font for readable Khmer text -->
+    <link href="https://fonts.googleapis.com/css2?family=Siemreap&display=swap" rel="stylesheet">
+    <!-- Google-hosted Khmer heading font (replacement for Khmer Muol Light) -->
+    <link href="https://fonts.googleapis.com/css2?family=Moul&display=swap" rel="stylesheet">
+    <!-- Font Awesome for social icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" referrerpolicy="no-referrer" />
+    <!-- Tailwind CSS: use local built CSS in production, CDN in development -->
+    {% if is_prod %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/tailwind.css') }}" />
+    {% else %}
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      // Optional Tailwind config extension (kept minimal). Uses class-based dark mode.
+      tailwind.config = { darkMode: 'class' };
+    </script>
+    {% endif %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/basic.css') }}" />
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5955692820280837"
+     crossorigin="anonymous"></script>
+  </head>
+  <body class="{{ 'admin' if admin else '' }} font-sans bg-gray-50 text-slate-900 dark:bg-slate-900 dark:text-slate-100">
+    <header class="container mx-auto px-4 py-3 mt-4 bg-white/80 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl shadow-lg backdrop-blur-sm">
+      <div class="brand">
+        <a href="/" class="brand-link inline-flex items-center gap-2 text-slate-900 dark:text-slate-100 hover:text-emerald-600 transition-colors">
+          <img src="{{ url_for('static', filename='img/logo.svg') }}" alt="មន្ទីរពេទ្យខេត្តកំពង់ឆ្នាំង" width="36" height="36"/>
+          <span>មន្ទីរពេទ្យខេត្តកំពង់ឆ្នាំង</span>
+        </a>
+      </div>
+      <button class="nav-toggle md:hidden inline-flex items-center justify-center px-2.5 py-1.5 text-sm rounded-md border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700" type="button" aria-label="Toggle navigation" aria-controls="primary-nav" aria-expanded="false">☰</button>
+      <nav id="primary-nav" class="primary-nav hidden md:flex items-center gap-2">
+        <a href="/" class="{{ 'active' if request.endpoint == 'public.home' else '' }}">Home</a>
+        <a href="{{ url_for('public.about') }}" class="{{ 'active' if request.endpoint == 'public.about' else '' }}">About Us</a>
+        <a href="{{ url_for('public.contact') }}" class="{{ 'active' if request.endpoint == 'public.contact' else '' }}">Contact Us</a>
+        </nav>
+      <form action="{{ url_for('public.search') }}" method="get" class="search-form flex items-center gap-2">
+        <input class="w-full md:w-64 rounded-lg border border-slate-200 dark:border-slate-700 bg-white/90 dark:bg-slate-900/60 px-3 py-2 text-sm outline-none focus:ring-4 focus:ring-emerald-500/30 focus:border-emerald-500" type="search" name="q" value="{{ q or '' }}" placeholder="Search news..." />
+        <button class="inline-flex items-center gap-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-sm px-3 py-2 shadow" type="submit">Search</button>
+      </form>
+      <div class="user-actions flex items-center gap-2">
+        <a class="text-m text-slate-700 dark:text-slate-200 hover:text-emerald-600" href="/admin">Login</a>
+        <button class="theme-toggle inline-flex items-center justify-center px-2.5 py-1.5 text-sm rounded-md border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700" type="button" aria-label="Toggle theme" title="Toggle theme">🌙</button>
+      </div>
+    </header>
+
+    {% block breaking %}{% endblock %}
+    <main class="container mx-auto px-4 py-6">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          <ul class="flashes space-y-2">
+            {% for category, message in messages %}
+              <li class="flash {{ category }} rounded-lg border p-3 text-sm">{{ message }}</li>
+            {% endfor %}
+          </ul>
+        {% endif %}
+      {% endwith %}
+      {% block content %}{% endblock %}
+    </main>
+    <footer class="site-footer border-t border-slate-200 dark:border-slate-700 mt-10">
+      <div class="footer-columns container mx-auto px-4 py-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <section>
+          <div class="flex items-center justify-between">
+            <h4 class="text-sm font-bold text-slate-500">About</h4>
+            <button type="button" class="footer-toggle sm:hidden inline-flex items-center justify-center p-2 text-slate-600 dark:text-slate-300" aria-expanded="false" aria-controls="footer-about">
+              <span class="sr-only">Toggle About links</span>
+              <i class="fa-solid fa-chevron-down"></i>
+            </button>
+          </div>
+          <ul id="footer-about" class="mt-2 space-y-1 text-sm hidden sm:block">
+            <li><a class="block py-1 hover:text-emerald-600" href="{{ url_for('public.about') }}">About Us</a></li>
+            <li><a class="block py-1 hover:text-emerald-600" href="{{ url_for('public.contact') }}">Contact</a></li>
+            <li><a class="block py-1 hover:text-emerald-600" href="{{ url_for('public.static_page', slug='privacy') }}">Privacy Policy</a></li>
+            <li><a class="block py-1 hover:text-emerald-600" href="{{ url_for('public.static_page', slug='advertise') }}">Advertise</a></li>
+            <li><a class="block py-1 hover:text-emerald-600" href="{{ url_for('public.static_page', slug='careers') }}">Careers</a></li>
+          </ul>
+        </section>
+        <section>
+          <div class="flex items-center justify-between">
+            <h4 class="text-sm font-bold text-slate-500">Follow</h4>
+            <button type="button" class="footer-toggle sm:hidden inline-flex items-center justify-center p-2 text-slate-600 dark:text-slate-300" aria-expanded="false" aria-controls="footer-follow">
+              <span class="sr-only">Toggle Follow links</span>
+              <i class="fa-solid fa-chevron-down"></i>
+            </button>
+          </div>
+          <ul id="footer-follow" class="mt-2 space-y-1 text-sm hidden sm:block">
+            <li><a class="block py-1 hover:text-emerald-600" href="https://www.facebook.com/share/1AdB33NBfz/?mibextid=wwXIfr">Facebook</a></li>
+            <li><a class="block py-1 hover:text-emerald-600" href="https://t.me/kcnprh2022">Telegram</a></li>
+            <li><a class="block py-1 hover:text-emerald-600" href="#">Twitter/X</a></li>
+          </ul>
+        </section>
+        <section>
+          <h4 class="text-sm font-bold text-slate-500">Newsletter</h4>
+          <form method="get" class="newsletter mt-2 flex flex-col sm:flex-row gap-2">
+            <input class="w-full sm:flex-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-white/90 dark:bg-slate-900/60 px-3 py-2 text-sm outline-none focus:ring-4 focus:ring-emerald-500/30 focus:border-emerald-500" type="email" placeholder="Your email" required />
+            <button class="w-full sm:w-auto inline-flex items-center justify-center gap-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-sm px-3 py-2 shadow" type="submit">Subscribe</button>
+          </form>
+          <small class="block mt-3 text-slate-500">&copy; <span id="footer-year"></span> មន្ទីរពេទ្យខេត្តកំពង់ឆ្នាំង</small>
+        </section>
+      </div>
+    </footer>
+    <script>
+      (function(){
+        // Ensure admin styling applies on /admin routes even if template flag isn't set
+        try {
+          if (location && location.pathname && location.pathname.startsWith('/admin')) {
+            document.body && document.body.classList && document.body.classList.add('admin');
+          }
+        } catch (e) {}
+
+        const key = 'reach-theme';
+        const root = document.documentElement;
+        const btn = document.querySelector('.theme-toggle');
+        const navBtn = document.querySelector('.nav-toggle');
+        const nav = document.getElementById('primary-nav');
+        const stored = localStorage.getItem(key);
+        // Determine initial theme: default to light if no stored preference
+        const initial = (stored === 'light' || stored === 'dark') ? stored : 'light';
+        root.setAttribute('data-theme', initial);
+        if(initial === 'dark') root.classList.add('dark'); else root.classList.remove('dark');
+        if(btn) btn.textContent = initial === 'dark' ? '☀️' : '🌙';
+        function toggle(){
+          const cur = root.getAttribute('data-theme') || initial;
+          const next = cur === 'light' ? 'dark' : 'light';
+          root.setAttribute('data-theme', next);
+          if(next === 'dark') root.classList.add('dark'); else root.classList.remove('dark');
+          localStorage.setItem(key, next);
+          if(btn) btn.textContent = next === 'dark' ? '☀️' : '🌙';
+        }
+        if(btn){ btn.addEventListener('click', toggle); }
+        if(navBtn && nav){
+          navBtn.addEventListener('click', function(){
+            const open = nav.classList.toggle('open');
+            navBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+          });
+        }
+
+        // Set current year in footer
+        try {
+          const y = document.getElementById('footer-year');
+          if (y) y.textContent = new Date().getFullYear();
+        } catch (e) {}
+
+        // Footer collapsible sections on small screens
+        try {
+          const mq = window.matchMedia('(max-width: 639px)'); // < sm
+          const toggles = document.querySelectorAll('.footer-toggle');
+          function applyFooterBehavior() {
+            const mobile = mq.matches;
+            toggles.forEach(btn => {
+              const targetId = btn.getAttribute('aria-controls');
+              const list = targetId && document.getElementById(targetId);
+              if (!list) return;
+              if (mobile) {
+                // ensure hidden by default on mobile (initial state)
+                if (!btn.dataset.bound) {
+                  btn.addEventListener('click', () => {
+                    const expanded = btn.getAttribute('aria-expanded') === 'true';
+                    btn.setAttribute('aria-expanded', (!expanded).toString());
+                    list.classList.toggle('hidden');
+                  });
+                  btn.dataset.bound = '1';
+                }
+                // lists are already hidden via "hidden sm:block"
+              } else {
+                // Ensure visible on >= sm
+                list.classList.remove('hidden');
+                btn.setAttribute('aria-expanded', 'true');
+              }
+            });
+          }
+          applyFooterBehavior();
+          if (mq.addEventListener) mq.addEventListener('change', applyFooterBehavior);
+          else if (mq.addListener) mq.addListener(applyFooterBehavior);
+        } catch (e) {}
+      })();
+    </script>
+  </body>
+</html>

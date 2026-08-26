@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% from "admin/_macros.html" import edit_button, delete_button %}
+{% block title %}Subcategories - Admin{% endblock %}
+{% block content %}
+  <div class="admin-page">
+    <div class="mb-4">
+      <div class="flex items-center gap-3 flex-wrap">
+        <h2 class="text-2xl font-semibold">Subcategories</h2>
+        <a class="inline-flex items-center px-3 py-2 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 shadow" href="{{ url_for('admin.subcategories_create') }}">+ New Subcategory</a>
+        <a class="text-sm text-slate-600 dark:text-slate-300 hover:underline" href="{{ url_for('admin.dashboard') }}">Dashboard</a>
+      </div>
+    </div>
+    {% if subcategories %}
+    <div class="overflow-auto rounded-xl border border-slate-200 dark:border-slate-700 bg-white/90 dark:bg-slate-900/50 shadow">
+      <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-700">
+        <thead class="bg-slate-50 dark:bg-slate-800/50">
+          <tr class="text-left text-xs font-semibold text-slate-600 dark:text-slate-300">
+            <th class="px-3 py-2">ID</th>
+            <th class="px-3 py-2">Name</th>
+            <th class="px-3 py-2">Category</th>
+            <th class="px-3 py-2">Description</th>
+            <th class="px-3 py-2">Active</th>
+            <th class="px-3 py-2">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-200 dark:divide-slate-700 text-sm">
+          {% for s in subcategories %}
+          <tr>
+            <td class="px-3 py-2">{{ s.SubCategoryId }}</td>
+            <td class="px-3 py-2">{{ s.Subcategory }}</td>
+            <td class="px-3 py-2">{{ s.category.CategoryName if s.category else s.CategoryId }}</td>
+            <td class="px-3 py-2">{{ s.SubCatDescription }}</td>
+            <td class="px-3 py-2">{{ 1 if s.Is_Active else 0 }}</td>
+            <td class="px-3 py-2">
+              <div class="flex items-center gap-2">
+                {{ edit_button(url_for('admin.subcategories_edit', sub_id=s.SubCategoryId)) }}
+                {{ delete_button(url_for('admin.subcategories_delete', sub_id=s.SubCategoryId), csrf_token(), 'Delete this subcategory?') }}
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+      <p class="text-slate-600 dark:text-slate-400">No subcategories yet.</p>
+    {% endif %}
+  </div>
+{% endblock %}

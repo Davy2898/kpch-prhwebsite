@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}{{ category.CategoryName }} - Reach News{% endblock %}
+{% block content %}
+  <h2>Category: {{ category.CategoryName }}</h2>
+  <ul>
+    {% for p in posts %}
+      <li>
+        <a class="post-title" href="{{ url_for('public.post_detail', post_id=p.id) }}">{{ p.PostTitle }}</a>
+      </li>
+    {% else %}
+      <li>No posts in this category yet.</li>
+    {% endfor %}
+  </ul>
+  {% if pagination %}
+    <div class="pagination">
+      {% if pagination.has_prev %}
+        <a href="{{ pagination.prev_url }}">&laquo; Prev</a>
+      {% endif %}
+      <span>Page {{ pagination.page }} of {{ (pagination.total // pagination.per_page) + (1 if (pagination.total % pagination.per_page) else 0) or 1 }}</span>
+      {% if pagination.has_next %}
+        <a href="{{ pagination.next_url }}">Next &raquo;</a>
+      {% endif %}
+    </div>
+  {% endif %}
+{% endblock %}
