@@ -85,7 +85,7 @@ def create_app(test_config: dict | None = None) -> Flask:
                 # Fonts (self + Google Fonts + cdnjs)
                 "font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com; "
                 # Frames (embedded Google properties + AdSense frames + AdTrafficQuality ep2)
-                "frame-src 'self' https://www.google.com https://maps.google.com https://googleads.g.doubleclick.net https://tpc.googlesyndication.com https://pagead2.googlesyndication.com https://ep2.adtrafficquality.google;"
+                "frame-src 'self' https://www.facebook.com https://web.facebook.com https://www.google.com https://maps.google.com https://googleads.g.doubleclick.net https://tpc.googlesyndication.com https://pagead2.googlesyndication.com https://ep2.adtrafficquality.google;"
             )
         else:
             # Development: allow common CDNs used by the templates
@@ -97,7 +97,7 @@ def create_app(test_config: dict | None = None) -> Flask:
                 "font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com; "
                 "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://cdn.jsdelivr.net; "
                 "connect-src 'self' ws:; "
-                "frame-src 'self' https://www.google.com https://maps.google.com;"
+                "frame-src 'self' https://www.facebook.com https://web.facebook.com https://www.google.com https://maps.google.com;"
             )
         resp.headers.setdefault("Content-Security-Policy", csp)
         return resp

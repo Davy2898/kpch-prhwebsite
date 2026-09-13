@@ -39,6 +39,8 @@ const menuOpen = ref(false);
 const searchText = ref(route.query.q || "");
 const appointmentStatus = ref(null);
 const appointmentLoading = ref(false);
+const aimNssfOpen = ref(false);
+const aimNssfChecklistOpen = ref(false);
 const form = reactive({
   name: "",
   phone: "",
@@ -48,9 +50,70 @@ const form = reactive({
   datetime: "",
 });
 
+const aimNssfUpdate = {
+  title: "ការដាក់ឱ្យដំណើរការម៉ាស៊ីនផ្ទៀងផ្ទាត់ស្វ័យប្រវត្តិ ប.ស.ស (AIM NSSF)",
+  subtitle: "មន្ទីរពេទ្យបង្អែកខេត្តកំពង់ឆ្នាំង បានបំពាក់ម៉ាស៊ីនស្វ័យប្រវត្តិដើម្បីសម្រួលសេវាជូនអ្នកជំងឺ",
+  status: "កំពុងដំណើរការធម្មតា (Active)",
+  location: "ច្រកចុះឈ្មោះពិនិត្យជំងឺក្រៅ (OPD Registration)",
+  date: "31 AUG 2026",
+  stepsTitle: "របៀបប្រើប្រាស់ម៉ាស៊ីន AIM",
+  steps: [
+    {
+      title: "ស្កេនកាត ប.ស.ស ឬ អត្តសញ្ញាណប័ណ្ណ",
+      desc: "ដាក់កាតសម្គាល់ខ្លួន ឬកាត ប.ស.ស របស់អ្នកនៅលើកន្លែងស្កេនរបស់ម៉ាស៊ីន",
+    },
+    {
+      title: "ផ្ទៀងផ្ទាត់អត្តសញ្ញាណ",
+      desc: "ផ្ទៀងផ្ទាត់ស្នាមម្រាមដៃ ឬទិន្នន័យផ្ទាល់ខ្លួនតាមការណែនាំលើអេក្រង់",
+    },
+    {
+      title: "ទទួលបង្កាន់ដៃចូលពិនិត្យ",
+      desc: "ម៉ាស៊ីននឹងចេញប័ណ្ណលេខរង់ចាំ ឬបញ្ជាក់សិទ្ធិ ដើម្បីចូលជួបគ្រូពេទ្យភ្លាមៗ",
+    },
+  ],
+  benefitsTitle: "អត្ថប្រយោជន៍ចម្បង",
+  benefits: [
+    "កាត់បន្ថយពេលវេលារង់ចាំកំណត់អត្តសញ្ញាណបានលឿនជាងមុន",
+    "ធានាសិទ្ធិពេញលេញជូនដល់សមាជិក ប.ស.ស ទាំងអស់",
+    "ទប់ស្កាត់ការក្លែងបន្លំ និងភាពមិនប្រក្រតី",
+    "ជួយឱ្យដំណើរការចុះឈ្មោះអ្នកជំងឺមានភាពរហ័ស និងច្បាស់លាស់",
+  ],
+  notes: [
+    "សូមយកកាត ប.ស.ស ឬអត្តសញ្ញាណប័ណ្ណមកជាមួយពេលមកពិនិត្យ",
+    "ប្រសិនបើមានបញ្ហាក្នុងការប្រើម៉ាស៊ីន សូមស្នើសុំជំនួយពីបុគ្គលិកនៅច្រកចុះឈ្មោះ",
+  ],
+};
+
+const aimNssfDocuments = ref([
+  {
+    title: "ប័ណ្ណសមាជិក ប.ស.ស ឬ App",
+    desc: "កាតសមាជិក ប.ស.ស ឬ បើក QR Code ក្នុងកម្មវិធី NSSF Member App",
+    checked: true,
+  },
+  {
+    title: "អត្តសញ្ញាណប័ណ្ណសញ្ជាតិខ្មែរ (ID Card)",
+    desc: "សូមយកឯកសារផ្ទៀងផ្ទាត់អត្តសញ្ញាណ និងត្រូវមានសុពលភាព",
+    checked: true,
+  },
+  {
+    title: "លេខទូរស័ព្ទមានសុពលភាព",
+    desc: "សម្រាប់ទំនាក់ទំនង ឬជំនួយបន្ថែមពីបុគ្គលិកចុះឈ្មោះ",
+    checked: false,
+  },
+]);
+
+const aimNssfReadyCount = computed(() => aimNssfDocuments.value.filter((item) => item.checked).length);
+const isAimNssfPost = computed(() => {
+  const post = postDetail.value?.post;
+  if (!post) return false;
+  const text = `${post.title || ""} ${post.body || ""} ${post.category?.name || ""}`.toLowerCase();
+  return text.includes("aim") || text.includes("nssf") || text.includes("ប.ស.ស");
+});
+
 const pathMode = computed(() => {
   if (route.path.startsWith("/about")) return "about";
   if (route.path.startsWith("/contact")) return "contact";
+  if (route.path.startsWith("/services/")) return "service";
   if (route.path.startsWith("/post/")) return "post";
   if (route.path.startsWith("/page/")) return "page";
   return "home";
@@ -81,10 +144,34 @@ const updatesHeading = computed(() => {
 const featuredPost = computed(() => postsData.value.posts[0] || null);
 const updatePosts = computed(() => postsData.value.posts.slice(featuredPost.value ? 1 : 0));
 const services = computed(() => site.value?.services || []);
+const emergencyServiceTitles = new Set(["Emergency Ambulance 24/7", "Emergency & ICU", "Inpatient Care / IPD"]);
+const emergencyServices = computed(() => services.value.filter((service) => emergencyServiceTitles.has(service.title)));
+const regularServices = computed(() => services.value.filter((service) => !emergencyServiceTitles.has(service.title)));
+const activeService = computed(() => {
+  if (pathMode.value !== "service") return null;
+  return services.value.find((service) => serviceSlug(service) === route.params.slug) || null;
+});
 const leaders = computed(() => site.value?.leaders || []);
 const director = computed(() => leaders.value[0] || null);
 const viceLeaders = computed(() => leaders.value.slice(1));
 const contact = computed(() => site.value?.contact || {});
+// Temporarily hide the Facebook feed. Set this back to true when the feature is needed again.
+const facebookFeedEnabled = false;
+const showFacebookFeed = computed(() => facebookFeedEnabled && isLanding.value && Boolean(contact.value?.facebook));
+const facebookFeedUrl = computed(() => {
+  if (!contact.value?.facebook) return "";
+  const params = new URLSearchParams({
+    href: contact.value.facebook,
+    tabs: "timeline",
+    width: "500",
+    height: "900",
+    small_header: "true",
+    adapt_container_width: "false",
+    hide_cover: "true",
+    show_facepile: "false",
+  });
+  return `https://www.facebook.com/plugins/page.php?${params.toString()}`;
+});
 
 function csrfToken() {
   return document.querySelector('meta[name="csrf-token"]')?.getAttribute("content") || "";
@@ -149,6 +236,18 @@ function setPage(page) {
 
 function phoneHref(phone) {
   return `tel:${String(phone).replace(/[^\d+]/g, "")}`;
+}
+
+function serviceSlug(service) {
+  return String(service.title || "")
+    .toLowerCase()
+    .replace(/&/g, "and")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+}
+
+function servicePath(service) {
+  return `/services/${serviceSlug(service)}`;
 }
 
 function openService(service) {
@@ -315,6 +414,36 @@ onMounted(loadAll);
         </div>
       </section>
 
+      <section v-if="isLanding && emergencyServices.length" class="section emergency-services-section">
+        <div class="section-heading">
+          <p class="eyebrow"><Ambulance :size="18" /> 24/7 Care</p>
+          <h2>សេវាបន្ទាន់ ២៤ម៉ោង</h2>
+          <span class="section-subtitle">24/7 Emergency Services for ambulance transfer, emergency treatment, and inpatient monitoring.</span>
+        </div>
+        <div class="emergency-service-grid">
+          <RouterLink
+            v-for="service in emergencyServices"
+            :key="service.title"
+            class="emergency-service-card"
+            :to="servicePath(service)"
+          >
+            <img :src="service.image" :alt="service.title" />
+            <div class="emergency-service-overlay"></div>
+            <div class="emergency-service-content">
+              <span class="emergency-service-icon">
+                <component :is="serviceIcon(service.details.icon)" :size="22" />
+              </span>
+              <div>
+                <strong>{{ service.khmer }}</strong>
+                <small>{{ service.title }}</small>
+              </div>
+              <p>{{ service.details.description }}</p>
+              <span class="emergency-service-link">បើកមើលសេវា <ArrowRight :size="15" /></span>
+            </div>
+          </RouterLink>
+        </div>
+      </section>
+
       <section v-if="isLanding" class="section services-section">
         <div class="section-heading">
           <p class="eyebrow"><Stethoscope :size="18" /> Care Services</p>
@@ -322,16 +451,16 @@ onMounted(loadAll);
           <span class="section-subtitle">Fast access to the main hospital services patients need most.</span>
         </div>
         <div class="service-grid">
-          <article v-for="service in services" :key="service.title" class="service-card">
+          <article v-for="service in regularServices" :key="service.title" class="service-card">
             <div class="service-card-image-wrap">
               <img :src="service.image" :alt="service.title" />
             </div>
             <div class="service-card-content">
               <strong>{{ service.khmer }}</strong>
               <span>{{ service.title }}</span>
-              <button type="button" :disabled="!service.details" @click="openService(service)">
-                Learn more <ArrowRight :size="15" />
-              </button>
+              <RouterLink v-if="service.details" class="service-card-link" :to="servicePath(service)">
+                ស្វែងយល់បន្ថែម <ArrowRight :size="15" />
+              </RouterLink>
             </div>
           </article>
         </div>
@@ -384,32 +513,125 @@ onMounted(loadAll);
         </section>
       </div>
 
-      <section v-if="pathMode === 'home'" class="section news-layout">
+      <section v-if="pathMode === 'home'" :class="['section', 'news-layout', { 'with-facebook': showFacebookFeed }]">
         <div class="content-column">
           <div class="section-heading">
             <p class="eyebrow"><Newspaper :size="18" /> Hospital Updates</p>
             <h2>{{ updatesHeading }}</h2>
             <span class="section-subtitle">Latest hospital announcements, health education, and public service notices.</span>
           </div>
-          <div class="updates-notice">
-            <ShieldCheck :size="18" />
-            <span>Important updates from Kampong Chhnang Provincial Referral Hospital for patients, families, and visitors.</span>
+          <div class="updates-overview">
+            <div class="updates-notice">
+              <ShieldCheck :size="18" />
+              <span>Verified updates from Kampong Chhnang Provincial Referral Hospital for patients, families, and visitors.</span>
+            </div>
+            <div class="updates-mini-stats" aria-label="Hospital update summary">
+              <span><strong>{{ postsData.posts.length + 1 }}</strong> Updates</span>
+              <span><Clock3 :size="15" /> Latest first</span>
+            </div>
+          </div>
+          <article class="nssf-update-card">
+            <div class="nssf-update-banner">
+              <span class="news-pill">Hospital Update</span>
+              <time>{{ aimNssfUpdate.date }}</time>
+            </div>
+            <div class="nssf-update-body">
+              <div class="nssf-update-icon">
+                <ShieldCheck :size="34" />
+              </div>
+              <div class="nssf-update-copy">
+                <h3>{{ aimNssfUpdate.title }}</h3>
+                <p>{{ aimNssfUpdate.subtitle }}</p>
+                <div class="nssf-update-details">
+                  <span><CheckCircle2 :size="16" /> {{ aimNssfUpdate.status }}</span>
+                  <span><MapPin :size="16" /> {{ aimNssfUpdate.location }}</span>
+                  <span><Clock3 :size="16" /> Faster patient check-in</span>
+                </div>
+                <button class="nssf-update-link" type="button" @click="aimNssfOpen = true">
+                  Read full update <ArrowRight :size="15" />
+                </button>
+              </div>
+            </div>
+          </article>
+          <div v-if="aimNssfOpen" class="nssf-update-modal-backdrop" @click.self="aimNssfOpen = false">
+            <section class="nssf-update-modal" role="dialog" aria-modal="true" aria-labelledby="aim-nssf-title">
+              <button class="nssf-update-close" type="button" aria-label="Close update" @click="aimNssfOpen = false">
+                <X :size="21" />
+              </button>
+              <div class="nssf-update-modal-header">
+                <span class="news-pill">AIM NSSF</span>
+                <time>{{ aimNssfUpdate.date }}</time>
+              </div>
+              <h2 id="aim-nssf-title">{{ aimNssfUpdate.title }}</h2>
+              <p class="nssf-update-subtitle">{{ aimNssfUpdate.subtitle }}</p>
+
+              <div class="nssf-update-status-grid">
+                <div>
+                  <CheckCircle2 :size="19" />
+                  <span>Status</span>
+                  <strong>{{ aimNssfUpdate.status }}</strong>
+                </div>
+                <div>
+                  <MapPin :size="19" />
+                  <span>Location</span>
+                  <strong>{{ aimNssfUpdate.location }}</strong>
+                </div>
+              </div>
+
+              <div class="nssf-guide-section">
+                <h3>{{ aimNssfUpdate.stepsTitle }}</h3>
+                <div class="nssf-step-grid">
+                  <article v-for="(step, index) in aimNssfUpdate.steps" :key="step.title">
+                    <span>{{ index + 1 }}</span>
+                    <h4>{{ step.title }}</h4>
+                    <p>{{ step.desc }}</p>
+                  </article>
+                </div>
+              </div>
+
+              <div class="nssf-guide-section">
+                <h3>{{ aimNssfUpdate.benefitsTitle }}</h3>
+                <ul class="nssf-benefit-list">
+                  <li v-for="benefit in aimNssfUpdate.benefits" :key="benefit">
+                    <CheckCircle2 :size="17" />
+                    <span>{{ benefit }}</span>
+                  </li>
+                </ul>
+              </div>
+
+              <div class="nssf-guide-notes">
+                <p v-for="note in aimNssfUpdate.notes" :key="note">{{ note }}</p>
+              </div>
+            </section>
           </div>
           <div v-if="featuredPost" class="featured-grid">
             <RouterLink class="featured-card" :to="featuredPost.url">
-              <img v-if="featuredPost.image" :src="featuredPost.image" :alt="featuredPost.title" />
-              <div>
-                <span class="news-pill">Featured Update</span>
+              <div class="featured-media">
+                <img v-if="featuredPost.image" :src="featuredPost.image" :alt="featuredPost.title" />
+                <div v-else class="image-fallback">
+                  <Newspaper :size="42" />
+                </div>
+              </div>
+              <div class="featured-copy">
+                <div class="featured-meta-row">
+                  <span class="news-pill">Featured Update</span>
+                  <time>{{ featuredPost.date || "Hospital News" }}</time>
+                </div>
                 <h3>{{ featuredPost.title }}</h3>
                 <p>{{ featuredPost.excerpt || "Read the latest update from the hospital." }}</p>
-                <small>{{ featuredPost.date || featuredPost.category?.name || "Hospital News" }}</small>
+                <small class="post-read-more">Read full update <ArrowRight :size="15" /></small>
               </div>
             </RouterLink>
           </div>
           <div class="post-grid">
             <RouterLink v-for="post in updatePosts" :key="post.id" class="post-card" :to="post.url">
-              <img v-if="post.image" :src="post.image" :alt="post.title" />
-              <div>
+              <div class="post-card-media">
+                <img v-if="post.image" :src="post.image" :alt="post.title" />
+                <div v-else class="image-fallback compact">
+                  <Newspaper :size="28" />
+                </div>
+              </div>
+              <div class="post-card-body">
                 <div class="post-card-meta">
                   <span class="news-pill">{{ post.category?.name || "Announcement" }}</span>
                   <time>{{ post.date || "Hospital Update" }}</time>
@@ -436,6 +658,31 @@ onMounted(loadAll);
           </div>
         </div>
 
+        <aside v-if="showFacebookFeed" class="facebook-feed-panel" aria-labelledby="facebook-feed-title">
+          <div class="facebook-feed-header">
+            <div>
+              <p class="eyebrow"><Facebook :size="18" /> Facebook</p>
+              <h3 id="facebook-feed-title">Real-Time Facebook Updates</h3>
+            </div>
+            <a :href="contact.facebook" target="_blank" rel="noopener">
+              View Page <ArrowRight :size="15" />
+            </a>
+          </div>
+          <div class="facebook-frame-wrap">
+          <iframe
+            title="Latest Facebook posts"
+            :src="facebookFeedUrl"
+            width="500"
+            height="900"
+            style="border: none; overflow: hidden"
+            scrolling="no"
+            frameborder="0"
+            allowfullscreen="true"
+            allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
+          ></iframe>
+          </div>
+        </aside>
+
       </section>
 
       <section v-if="isLanding" class="section emergency-section">
@@ -446,6 +693,61 @@ onMounted(loadAll);
           </a>
           <span><Clock3 :size="17" /> Open 24 hours, every day</span>
         </aside>
+      </section>
+
+      <section v-if="pathMode === 'service' && activeService?.details" class="section service-page">
+        <RouterLink class="back-link" to="/"><ArrowLeft :size="18" /> Back to services</RouterLink>
+        <div class="service-page-hero">
+          <div class="service-page-image">
+            <img :src="activeService.image" :alt="activeService.title" />
+          </div>
+          <div class="service-page-copy">
+            <p class="eyebrow">{{ serviceIconLabel(activeService.details) }}</p>
+            <h1>{{ activeService.details.title }}</h1>
+            <h2>{{ activeService.details.subtitle }}</h2>
+            <p>{{ activeService.details.description }}</p>
+            <p class="service-page-english">{{ activeService.details.english }}</p>
+          </div>
+        </div>
+
+        <div v-if="activeService.details.consultations" class="service-detail-list service-page-list">
+          <article v-for="item in activeService.details.consultations" :key="item.title">
+            <CheckCircle2 :size="18" />
+            <div>
+              <h4>{{ item.title }}</h4>
+              <p>{{ item.description }}</p>
+            </div>
+          </article>
+        </div>
+
+        <div class="service-info-grid service-page-info">
+          <div>
+            <strong>{{ servicePrimaryLabel(activeService.details) }}</strong>
+            <span>{{ servicePrimaryValue(activeService.details) }}</span>
+          </div>
+          <div>
+            <strong>{{ serviceSecondaryLabel(activeService.details) }}</strong>
+            <span>{{ serviceSecondaryValue(activeService.details) }}</span>
+          </div>
+        </div>
+
+        <div class="service-modal-actions">
+          <template v-if="activeService.details.callNow">
+            <a class="primary-action emergency-call-action" :href="phoneHref(activeService.details.callNow)">
+              <Phone :size="18" /> {{ activeService.details.callLabel }}
+            </a>
+          </template>
+          <RouterLink class="primary-action" to="/contact">
+            <component :is="serviceActionIcon(activeService.details)" :size="18" />
+            {{ serviceAppointmentLabel(activeService.details) }}
+          </RouterLink>
+        </div>
+      </section>
+
+      <section v-else-if="pathMode === 'service'" class="section static-page">
+        <RouterLink class="back-link" to="/"><ArrowLeft :size="18" /> Back to services</RouterLink>
+        <h1>Service not found</h1>
+        <article>This service page is not available.</article>
       </section>
 
       <section v-if="pathMode === 'about'" class="section about-page">
@@ -531,6 +833,9 @@ onMounted(loadAll);
               <select v-model="form.department">
                 <option>Outpatient Care</option>
                 <option>Eye Care & Ophthalmology</option>
+                <option>Ear, Nose & Throat (ENT)</option>
+                <option>Pediatric & Neonatal Care</option>
+                <option>Hemodialysis Service</option>
                 <option>Emergency Ambulance 24/7</option>
                 <option>Emergency & ICU</option>
                 <option>Inpatient Care / IPD</option>
@@ -589,6 +894,45 @@ onMounted(loadAll);
         <p class="eyebrow"><Newspaper :size="18" /> {{ postDetail.post.category?.name || "News" }}</p>
         <h1>{{ postDetail.post.title }}</h1>
         <div class="post-meta">{{ postDetail.post.date }} · {{ postDetail.post.views }} views</div>
+        <div v-if="isAimNssfPost" class="aim-post-action-panel">
+          <div>
+            <strong>{{ aimNssfUpdate.stepsTitle }}</strong>
+            <span>{{ aimNssfUpdate.status }} · {{ aimNssfUpdate.location }}</span>
+          </div>
+          <button class="aim-checklist-button" type="button" @click="aimNssfChecklistOpen = true">
+            <CheckCircle2 :size="18" /> បើកបញ្ជីឯកសារត្រូវត្រៀម
+          </button>
+        </div>
+        <div v-if="isAimNssfPost && aimNssfChecklistOpen" class="aim-checklist-backdrop" @click.self="aimNssfChecklistOpen = false">
+          <section class="aim-checklist-modal" role="dialog" aria-modal="true" aria-labelledby="aim-checklist-title">
+            <div class="aim-checklist-header">
+              <div>
+                <span>[ ✓ ]</span>
+                <h2 id="aim-checklist-title">ឯកសារចាំបាច់ត្រូវយកមកជាមួយ</h2>
+              </div>
+              <button type="button" aria-label="Close checklist" @click="aimNssfChecklistOpen = false">[ × ]</button>
+            </div>
+            <p class="aim-checklist-intro">
+              សូមរៀបចំឯកសារខាងក្រោមមុនពេលមកដល់ច្រកចុះឈ្មោះ ដើម្បីផ្ទៀងផ្ទាត់ ប.ស.ស។
+            </p>
+            <div class="aim-checklist-progress">
+              <strong>{{ aimNssfReadyCount }} / {{ aimNssfDocuments.length }}</strong>
+              <span>បានត្រៀមរួច</span>
+            </div>
+            <label v-for="document in aimNssfDocuments" :key="document.title" class="aim-document-row">
+              <input v-model="document.checked" type="checkbox" />
+              <div>
+                <strong>{{ document.title }}</strong>
+                <span>{{ document.desc }}</span>
+              </div>
+            </label>
+            <div class="aim-checklist-footer">
+              <button class="aim-checklist-confirm" type="button" @click="aimNssfChecklistOpen = false">
+                យល់ព្រម
+              </button>
+            </div>
+          </section>
+        </div>
         <article class="post-body" v-html="postDetail.post.body"></article>
       </section>
 

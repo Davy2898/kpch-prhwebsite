@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{% block title %}Admin{% endblock %}</title>
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='img/logo.svg') }}" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+Khmer:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    {% if is_prod %}
+      <link rel="stylesheet" href="{{ url_for('static', filename='css/tailwind.css') }}" />
+    {% else %}
+      <script src="https://cdn.tailwindcss.com"></script>
+      <script>
+        tailwind.config = { darkMode: 'class' };
+      </script>
+    {% endif %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/basic.css') }}" />
+  </head>
+  <body class="admin bg-slate-100 text-slate-900">
+    {% set signed_in = session.get("admin_username") %}
+    {% if signed_in %}
+      <div class="admin-layout">
+        <aside class="admin-sidebar" id="admin-sidebar">
+          <a class="admin-brand-panel" href="{{ url_for('admin.dashboard') }}">
+            <img src="{{ url_for('static', filename='img/logo.svg') }}" alt="" />
+            <span>
+              <strong>មន្ទីរពេទ្យខេត្តកំពង់ឆ្នាំង</strong>
+              <small>Admin Control Panel</small>
+            </span>
+          </a>
+
+          <nav class="admin-sidebar-nav" aria-label="Admin navigation">
+            <a class="{{ 'is-active' if request.endpoint == 'admin.dashboard' else '' }}" href="{{ url_for('admin.dashboard') }}">Dashboard</a>
+            <a class="{{ 'is-active' if request.endpoint and request.endpoint.startswith('admin.posts') else '' }}" href="{{ url_for('admin.posts_list') }}">Posts</a>
+            <a class="{{ 'is-active' if request.endpoint and request.endpoint.startswith('admin.categories') else '' }}" href="{{ url_for('admin.categories_list') }}">Categories</a>
+            <a class="{{ 'is-active' if request.endpoint and request.endpoint.startswith('admin.subcategories') else '' }}" href="{{ url_for('admin.subcategories_list') }}">Subcategories</a>
+            <a class="{{ 'is-active' if request.endpoint and request.endpoint.startswith('admin.pages') else '' }}" href="{{ url_for('admin.pages_list') }}">Pages</a>
+            <a class="{{ 'is-active' if request.endpoint and request.endpoint.startswith('admin.comments') else '' }}" href="{{ url_for('admin.comments_list') }}">Comments</a>
+            <a class="{{ 'is-active' if request.endpoint and request.endpoint.startswith('admin.users') else '' }}" href="{{ url_for('admin.users_list') }}">Admin Users</a>
+          </nav>
+
+          <div class="admin-sidebar-footer">
+            <a href="/">Back to Site</a>
+            <a href="{{ url_for('admin.logout') }}">Logout</a>
+          </div>
+        </aside>
+
+        <div class="admin-workspace">
+          <header class="admin-topbar-panel">
+            <button class="admin-menu-button" type="button" aria-controls="admin-sidebar" aria-expanded="false">
+              Menu
+            </button>
+            <div>
+              <strong>{% block admin_heading %}Admin{% endblock %}</strong>
+              <span>Signed in as {{ signed_in }}</span>
+            </div>
+            <a class="admin-topbar-action" href="{{ url_for('admin.posts_create') }}">New Post</a>
+          </header>
+
+          <main class="admin-content-panel">
+    {% else %}
+      <main class="admin-login-shell">
+    {% endif %}
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <ul class="admin-flashes {{ 'admin-login-flashes' if not signed_in else '' }}">
+          {% for category, message in messages %}
+            <li class="flash {{ category }}">{{ message }}</li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
+
+    {% if signed_in %}
+          </main>
+        </div>
+      </div>
+    {% else %}
+      </main>
+    {% endif %}
+
+    <script>
+      (function () {
+        var button = document.querySelector('.admin-menu-button');
+        var sidebar = document.getElementById('admin-sidebar');
+        if (!button || !sidebar) return;
+        button.addEventListener('click', function () {
+          var open = sidebar.classList.toggle('is-open');
+          button.setAttribute('aria-expanded', open ? 'true' : 'false');
+        });
+      })();
+    </script>
+  </body>
+</html>

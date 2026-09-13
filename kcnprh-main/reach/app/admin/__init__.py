@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session, abort, jsonify
 from hashlib import md5
-from sqlalchemy import func
+from sqlalchemy import func, or_
 from sqlalchemy.orm import selectinload
 from ..models import Admin, Post, Category, SubCategory, Page, Comment
 from .. import db
@@ -9,11 +9,75 @@ from werkzeug.utils import secure_filename
 from flask import current_app
 import os
 import uuid
-import io
 from PIL import Image
 import bleach
 
 bp = Blueprint("admin", __name__, template_folder="../templates/admin")
+
+ALLOWED_IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
+MAX_FEATURED_IMAGE_SIZE = (1600, 1000)
+
+
+def next_id(column):
+    return (db.session.query(func.max(column)).scalar() or 0) + 1
+
+
+def upload_dir() -> str:
+    return current_app.config.get("UPLOAD_FOLDER") or os.path.join(current_app.static_folder, "uploads")
+
+
+def upload_path(filename: str) -> str:
+    return os.path.join(upload_dir(), os.path.basename(filename))
+
+
+def delete_uploaded_image(filename: str | None) -> None:
+    if not filename:
+        return
+    path = upload_path(filename)
+    try:
+        if os.path.isfile(path):
+            os.remove(path)
+    except OSError:
+        current_app.logger.warning("Failed to delete uploaded image: %s", filename)
+
+
+def save_featured_image(image_file) -> str:
+    allowed_ext = ALLOWED_IMAGE_EXTENSIONS
+    base = secure_filename(image_file.filename or "")
+    name, ext = os.path.splitext(base)
+    ext = ext.lower()
+    if ext not in allowed_ext:
+        raise ValueError("Unsupported image type. Use JPG, PNG, or WEBP.")
+
+    unique_name = f"{name}_{uuid.uuid4().hex[:8]}{ext}"
+    os.makedirs(upload_dir(), exist_ok=True)
+    image_path = upload_path(unique_name)
+
+    try:
+        image_file.stream.seek(0)
+        with Image.open(image_file.stream) as image:
+            image.verify()
+
+        image_file.stream.seek(0)
+        with Image.open(image_file.stream) as image:
+            image.thumbnail(MAX_FEATURED_IMAGE_SIZE)
+            save_kwargs = {"optimize": True}
+
+            if ext in {".jpg", ".jpeg"}:
+                image = image.convert("RGB")
+                save_kwargs["quality"] = 85
+                image.save(image_path, format="JPEG", **save_kwargs)
+            elif ext == ".webp":
+                save_kwargs["quality"] = 85
+                image.save(image_path, format="WEBP", **save_kwargs)
+            else:
+                image.save(image_path, format="PNG", **save_kwargs)
+    except ValueError:
+        raise
+    except Exception as exc:
+        raise ValueError("Uploaded file is not a valid image.") from exc
+
+    return unique_name
 
 
 def login_required(view):
@@ -85,16 +149,43 @@ def logout():
 @bp.get("/posts")
 @login_required
 def posts_list():
-    posts = (
-        Post.query.options(
-            selectinload(Post.category),
-            selectinload(Post.subcategory),
-            selectinload(Post.author),
-        )
-        .order_by(Post.PostingDate.desc())
-        .all()
+    q = (request.args.get("q") or "").strip()
+    category_id = request.args.get("category_id", type=int)
+    subcategory_id = request.args.get("subcategory_id", type=int)
+    status = (request.args.get("status") or "").strip()
+
+    query = Post.query.options(
+        selectinload(Post.category),
+        selectinload(Post.subcategory),
+        selectinload(Post.author),
     )
-    return render_template("admin/posts_list.html", posts=posts)
+    if q:
+        pattern = f"%{q}%"
+        query = query.filter(or_(Post.PostTitle.ilike(pattern), Post.PostDetails.ilike(pattern)))
+    if category_id:
+        query = query.filter(Post.CategoryId == category_id)
+    if subcategory_id:
+        query = query.filter(Post.SubCategoryId == subcategory_id)
+    if status in {"1", "0"}:
+        query = query.filter(Post.Is_Active == int(status))
+
+    posts = query.order_by(Post.PostingDate.desc()).all()
+    filters = {
+        "q": q,
+        "category_id": category_id,
+        "subcategory_id": subcategory_id,
+        "status": status,
+        "active": bool(q or category_id or subcategory_id or status in {"1", "0"}),
+    }
+    categories = Category.query.order_by(Category.CategoryName).all()
+    subcategories = SubCategory.query.order_by(SubCategory.Subcategory).all()
+    return render_template(
+        "admin/posts_list.html",
+        posts=posts,
+        categories=categories,
+        subcategories=subcategories,
+        filters=filters,
+    )
 
 
 @bp.route("/posts/new", methods=["GET", "POST"])
@@ -125,33 +216,21 @@ def posts_create():
         image_file = request.files.get("PostImage")
         filename = None
         if image_file and image_file.filename:
-            # Validate and generate a unique safe filename
-            allowed_ext = {".jpg", ".jpeg", ".png", ".webp"}
-            base = secure_filename(image_file.filename)
-            name, ext = os.path.splitext(base)
-            if ext.lower() not in allowed_ext:
-                flash("Unsupported image type. Use JPG, PNG, or WEBP.", "danger")
-                return render_template("admin/post_form.html", categories=Category.query.order_by(Category.CategoryName).all(), subcategories=SubCategory.query.order_by(SubCategory.Subcategory).all(), post=None)
-            # Magic-byte validation using Pillow
             try:
-                image_file.stream.seek(0)
-                with Image.open(image_file.stream) as im:
-                    im.verify()
-                image_file.stream.seek(0)
-            except Exception:
-                flash("Uploaded file is not a valid image.", "danger")
+                filename = save_featured_image(image_file)
+            except ValueError as exc:
+                flash(str(exc), "danger")
                 return render_template("admin/post_form.html", categories=Category.query.order_by(Category.CategoryName).all(), subcategories=SubCategory.query.order_by(SubCategory.Subcategory).all(), post=None)
-            unique_name = f"{name}_{uuid.uuid4().hex[:8]}{ext.lower()}"
-            upload_dir = current_app.config.get("UPLOAD_FOLDER") or os.path.join(current_app.static_folder, 'uploads')
-            os.makedirs(upload_dir, exist_ok=True)
-            image_path = os.path.join(upload_dir, unique_name)
-            try:
-                image_file.save(image_path)
-            except Exception:
-                flash("Failed to save image.", "danger")
-                return render_template("admin/post_form.html", categories=Category.query.order_by(Category.CategoryName).all(), subcategories=SubCategory.query.order_by(SubCategory.Subcategory).all(), post=None)
-            filename = unique_name
-        kwargs = dict(PostTitle=title, CategoryId=category_id, SubCategoryId=subcategory_id, PostDetails=details, Is_Active=is_active, postedBy=session.get("admin_username"))
+        kwargs = dict(
+            id=next_id(Post.id),
+            PostTitle=title,
+            CategoryId=category_id,
+            SubCategoryId=subcategory_id,
+            PostDetails=details,
+            Is_Active=is_active,
+            viewCounter=0,
+            postedBy=session.get("admin_username"),
+        )
         if filename and hasattr(Post, 'PostImage'):
             kwargs['PostImage'] = filename
         post = Post(**kwargs)
@@ -191,33 +270,20 @@ def posts_edit(post_id: int):
         post.Is_Active = 1 if request.form.get("Is_Active") == "1" else 0
         post.lastUpdatedBy = session.get("admin_username")
         image_file = request.files.get("PostImage")
+        old_image = post.PostImage
         if image_file and image_file.filename:
-            allowed_ext = {".jpg", ".jpeg", ".png", ".webp"}
-            base = secure_filename(image_file.filename)
-            name, ext = os.path.splitext(base)
-            if ext.lower() not in allowed_ext:
-                flash("Unsupported image type. Use JPG, PNG, or WEBP.", "danger")
-                return render_template("admin/post_form.html", categories=Category.query.order_by(Category.CategoryName).all(), subcategories=SubCategory.query.order_by(SubCategory.Subcategory).all(), post=post)
-            # Magic-byte validation using Pillow
             try:
-                image_file.stream.seek(0)
-                with Image.open(image_file.stream) as im:
-                    im.verify()
-                image_file.stream.seek(0)
-            except Exception:
-                flash("Uploaded file is not a valid image.", "danger")
-                return render_template("admin/post_form.html", categories=Category.query.order_by(Category.CategoryName).all(), subcategories=SubCategory.query.order_by(SubCategory.Subcategory).all(), post=post)
-            unique_name = f"{name}_{uuid.uuid4().hex[:8]}{ext.lower()}"
-            upload_dir = current_app.config.get("UPLOAD_FOLDER")
-            os.makedirs(upload_dir, exist_ok=True)
-            image_path = os.path.join(upload_dir, unique_name)
-            try:
-                image_file.save(image_path)
-            except Exception:
-                flash("Failed to save image.", "danger")
+                unique_name = save_featured_image(image_file)
+            except ValueError as exc:
+                flash(str(exc), "danger")
                 return render_template("admin/post_form.html", categories=Category.query.order_by(Category.CategoryName).all(), subcategories=SubCategory.query.order_by(SubCategory.Subcategory).all(), post=post)
             if hasattr(post, 'PostImage'):
                 post.PostImage = unique_name
+            delete_uploaded_image(old_image)
+        elif request.form.get("RemovePostImage") == "1":
+            if hasattr(post, "PostImage"):
+                post.PostImage = None
+            delete_uploaded_image(old_image)
         db.session.commit()
         flash("Post updated", "success")
         return redirect(url_for("admin.posts_list"))
@@ -230,8 +296,10 @@ def posts_edit(post_id: int):
 @login_required
 def posts_delete(post_id: int):
     post = Post.query.get_or_404(post_id)
+    old_image = post.PostImage
     db.session.delete(post)
     db.session.commit()
+    delete_uploaded_image(old_image)
     flash("Post deleted", "success")
     return redirect(url_for("admin.posts_list"))
 
@@ -289,7 +357,7 @@ def categories_create():
         name = request.form.get("CategoryName", "")
         desc = request.form.get("Description", "")
         is_active = 1 if request.form.get("Is_Active") == "1" else 0
-        cat = Category(CategoryName=name, Description=desc, Is_Active=is_active)
+        cat = Category(id=next_id(Category.id), CategoryName=name, Description=desc, Is_Active=is_active)
         db.session.add(cat)
         db.session.commit()
         flash("Category created", "success")
@@ -341,7 +409,13 @@ def subcategories_create():
         desc = request.form.get("SubCatDescription", "")
         category_id = request.form.get("CategoryId", type=int)
         is_active = 1 if request.form.get("Is_Active") == "1" else 0
-        sub = SubCategory(Subcategory=name, SubCatDescription=desc, CategoryId=category_id, Is_Active=is_active)
+        sub = SubCategory(
+            SubCategoryId=next_id(SubCategory.SubCategoryId),
+            Subcategory=name,
+            SubCatDescription=desc,
+            CategoryId=category_id,
+            Is_Active=is_active,
+        )
         db.session.add(sub)
         db.session.commit()
         flash("SubCategory created", "success")
@@ -391,7 +465,7 @@ def pages_create():
         name = request.form.get("PageName", "")
         title = request.form.get("PageTitle", "")
         desc = request.form.get("Description", "")
-        pg = Page(PageName=name, PageTitle=title, Description=desc)
+        pg = Page(id=next_id(Page.id), PageName=name, PageTitle=title, Description=desc)
         db.session.add(pg)
         db.session.commit()
         flash("Page created", "success")
@@ -461,7 +535,13 @@ def users_create():
             flash("Username already exists", "danger")
             return render_template("admin/user_form.html", user=None)
         hashed = generate_password_hash(password)  # pbkdf2:sha256
-        user = Admin(AdminUserName=username, AdminEmailId=email, AdminPassword=hashed, userType=1)
+        user = Admin(
+            id=next_id(Admin.id),
+            AdminUserName=username,
+            AdminEmailId=email,
+            AdminPassword=hashed,
+            userType=1,
+        )
         db.session.add(user)
         db.session.commit()
         flash("Admin user created", "success")

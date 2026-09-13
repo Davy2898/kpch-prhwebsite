@@ -94,6 +94,32 @@ def site():
                         "english": "Comprehensive diagnostic and clinical consultation services tailored for non-admitted patients.",
                         "hours": "7:30 AM - 8:00 PM (Monday - Sunday)",
                         "specialties": "General Medicine, Pediatrics, Cardiology, OB-GYN",
+                        "consultations": [
+                            {
+                                "title": "ការពិគ្រោះជំងឺទូទៅ និងឯកទេស (General & Specialist Consultations)",
+                                "description": "ការពិនិត្យសុខភាពជាប្រចាំ ការពិនិត្យរាងកាយទូទៅ និងការធ្វើរោគវិនិច្ឆ័យដោយវេជ្ជបណ្ឌិតឯកទេស (ឧទាហរណ៍៖ ឯកទេសជំងឺបេះដូង កុមារ រោគស្ត្រី និងសម្ភព ព្រមទាំងសើស្បែក)។",
+                            },
+                            {
+                                "title": "ការធ្វើរោគវិនិច្ឆ័យ និងតេស្តមន្ទីរពិសោធន៍ (Diagnostic & Lab Testing)",
+                                "description": "ការពិនិត្យឈាម វិភាគទឹកនោម ការថតកាំរស្មីអ៊ិច (X-rays) អេកូសាស្ត្រ (Ultrasounds) ស្កេន CT scans និងការវាស់ចង្វាក់បេះដូង (ECG/EKG)។",
+                            },
+                            {
+                                "title": "ការវះកាត់តូច និងនីតិវិធីព្យាបាលទូទៅ (Minor Surgical & Clinical Procedures)",
+                                "description": "ការដេររបួស ការវះកាត់យកដុំសាច់តូចៗ ឬប្រជ្រុយ ការច្រិបសាច់ពិនិត្យ (Biopsy) និងការលាងផ្លាស់ប្តូរបង់រុំរបួសជាប្រចាំ។",
+                            },
+                            {
+                                "title": "ការគ្រប់គ្រង និងតាមដានជំងឺរ៉ាំរ៉ៃ (Chronic Disease Management)",
+                                "description": "ការណាត់ជួបតាមដានសុខភាពជាប្រចាំសម្រាប់ជំងឺរ៉ាំរ៉ៃ ដូចជា ជំងឺលើសសម្ពាធឈាម ទឹកនោមផ្អែម ហឺត ឬបញ្ហាក្រពេញទីរ៉ូអ៊ីត។",
+                            },
+                            {
+                                "title": "ការថែទាំបង្ការ និងការពិនិត្យស្វែងរកជំងឺ (Preventative Care & Screening)",
+                                "description": "ការចាក់វ៉ាក់សាំង កញ្ចប់ពិនិត្យសុខភាពទូទៅ ការពិនិត្យស្វែងរកជំងឺមហារីក និងការពិគ្រោះយោបល់ផ្នែកអាហារូបត្ថម្ភ។",
+                            },
+                            {
+                                "title": "ការស្តារនីតិសម្បទា និងការព្យាបាលដោយចលនា (Rehabilitation & Therapy)",
+                                "description": "សេវាព្យាបាលដោយចលនា (Physical therapy) ការព្យាបាលការងារ និងមុខងារប្រចាំថ្ងៃ (Occupational therapy) ព្រមទាំងការព្យាបាលការនិយាយស្តី (Speech therapy)។",
+                            },
+                        ],
                     },
                 },
                 {
@@ -109,6 +135,119 @@ def site():
                         "english": "Comprehensive vision exams, eye disease treatments, and advanced ophthalmic surgical care.",
                         "hours": "7:30 AM - 6:00 PM (Monday - Sunday)",
                         "keyServices": "Cataract Surgery, Glaucoma Care, Vision Testing, Pediatric Eye Care",
+                        "consultations": [
+                            {
+                                "title": "ការពិនិត្យភ្នែក និងវាស់កម្រិតគំហើញ (Comprehensive Eye & Vision Exams)",
+                                "description": "ការវាស់កម្រិតគំហើញ ពិនិត្យបញ្ហាភ្នែក (ម្ញូប ភ្នែកមើលជិតមិនច្បាស់ ភ្នែកផ្កាភ្លើង) និងការកាត់វ៉ែនតា ឬកែវភ្នែក (Contact lenses)។",
+                            },
+                            {
+                                "title": "ការធ្វើរោគវិនិច្ឆ័យ និងព្យាបាលជំងឺភ្នែក (Eye Disease Diagnosis & Management)",
+                                "description": "ព្យាបាលជំងឺភ្នែកស្ងួត រលាកភ្នែក ជំងឺឡើងទឹកបាតភ្នែក (Glaucoma) ជំងឺភ្នែកឡើងបាយ (Cataract) និងជំងឺខូចរ៉េទីនដោយសារទឹកនោមផ្អែម (Diabetic Retinopathy)។",
+                            },
+                            {
+                                "title": "ការពិនិត្យតាមម៉ាស៊ីនឯកទេសចក្ខុរោគ (Specialized Ophthalmic Diagnostics)",
+                                "description": "ការពិនិត្យដោយម៉ាស៊ីនពង្រីកបាតភ្នែក (Slit Lamp) ការវាស់សម្ពាធទឹកក្នុងគ្រាប់ភ្នែក (Tonometry) និងការថតស្កេនស្រទាប់បាតភ្នែក (OCT)។",
+                            },
+                            {
+                                "title": "ការវះកាត់ និងការព្យាបាលដោយកាំរស្មីឡាស៊ែរ (Surgical & Laser Procedures)",
+                                "description": "ការវះកាត់ប្តូរកែវភ្នែកឡើងបាយ (Cataract Surgery) ការវះកាត់កន្ទុយថ្លែន ការបាញ់ឡាស៊ែរព្យាបាលបាតភ្នែក និងការវះកាត់កែសម្រួលត្របកភ្នែក។",
+                            },
+                            {
+                                "title": "ការសង្គ្រោះបន្ទាន់ និងថែទាំភ្នែកកុមារ (Emergency & Pediatric Eye Care)",
+                                "description": "ការយកកម្ទេចកំទី ឬធូលីចេញពីភ្នែក ការព្យាបាលភ្នែកប៉ះទង្គិច ឬសារធាតុគីមី និងការពិនិត្យព្យាបាលភ្នែកស្រលៀង ឬភ្នែកខ្ជិល (Amblyopia) ចំពោះកុមារ។",
+                            },
+                        ],
+                    },
+                },
+                {
+                    "title": "Ear, Nose & Throat (ENT)",
+                    "khmer": "សេវា ពិនិត្យត្រចៀក ច្រមុះ បំពង់ក",
+                    "image": _asset("img/opt.jpg"),
+                    "details": {
+                        "icon": "medical-cross",
+                        "iconLabel": "Ear, Nose & Throat / ENT",
+                        "title": "សេវា ពិនិត្យត្រចៀក ច្រមុះ បំពង់ក",
+                        "subtitle": "Ear, Nose & Throat (ENT)",
+                        "description": "ផ្តល់សេវាពិនិត្យ ពិគ្រោះ និងព្យាបាលបញ្ហាត្រចៀក ច្រមុះ បំពង់ក និងផ្លូវដង្ហើមផ្នែកខាងលើ។",
+                        "english": "ENT consultation for ear, nose, throat, sinus, hearing, and upper airway concerns.",
+                        "hours": "7:30 AM - 5:00 PM (Monday - Sunday)",
+                        "keyServices": "Ear Exams, Nasal & Sinus Care, Throat Consultation, Hearing Concerns",
+                        "consultations": [
+                            {
+                                "title": "ពិនិត្យត្រចៀក និងបញ្ហាការស្តាប់ (Ear & Hearing Check)",
+                                "description": "ពិនិត្យការឈឺត្រចៀក ស្ទះត្រចៀក ហូរទឹកត្រចៀក សំឡេងរោទ៍ក្នុងត្រចៀក និងបញ្ហាការស្តាប់។",
+                            },
+                            {
+                                "title": "ពិនិត្យច្រមុះ និងរលាកស៊ីនុស (Nose & Sinus Care)",
+                                "description": "ពិគ្រោះបញ្ហាតឹងច្រមុះ រលាកច្រមុះ អាលែកហ្ស៊ី ឈាមច្រមុះ និងរលាកស៊ីនុស។",
+                            },
+                            {
+                                "title": "ពិនិត្យបំពង់ក និងសម្លេង (Throat & Voice Care)",
+                                "description": "ពិនិត្យឈឺបំពង់ក ក្អករ៉ាំរ៉ៃ ស្អកសំឡេង រលាកក្រពេញ tonsil និងបញ្ហាលេប។",
+                            },
+                        ],
+                        "appointmentLabel": "កក់ការណាត់ជួប ENT (Book ENT Visit)",
+                    },
+                },
+                {
+                    "title": "Pediatric & Neonatal Care",
+                    "khmer": "ផ្នែកជំងឺកុមារ-ទារក",
+                    "image": _asset("img/pdt.png"),
+                    "details": {
+                        "icon": "baby",
+                        "iconLabel": "Baby / Pediatric & Neonatal Care",
+                        "title": "ផ្នែកជំងឺកុមារ-ទារក",
+                        "subtitle": "Pediatric & Neonatal Care",
+                        "description": "ផ្តល់សេវាពិនិត្យ ពិគ្រោះ ព្យាបាល និងតាមដានសុខភាពកុមារ ទារក និងទារកទើបនឹងកើត។",
+                        "english": "Pediatric and neonatal care for children, infants, and newborns, including consultation, treatment, and follow-up.",
+                        "hours": "7:30 AM - 5:00 PM (Monday - Sunday)",
+                        "keyServices": "Child Consultation, Newborn Care, Vaccination Advice, Growth Monitoring",
+                        "consultations": [
+                            {
+                                "title": "ពិនិត្យ និងព្យាបាលជំងឺកុមារ (Pediatric Consultation)",
+                                "description": "ពិគ្រោះ ពិនិត្យ និងព្យាបាលបញ្ហាសុខភាពកុមារទូទៅ ដូចជា ក្តៅខ្លួន ក្អក រាគ អាឡែកហ្ស៊ី និងជំងឺឆ្លងទូទៅ។",
+                            },
+                            {
+                                "title": "ថែទាំទារក និងទារកទើបនឹងកើត (Newborn & Neonatal Care)",
+                                "description": "តាមដានសុខភាពទារក ការបំបៅដោះ ការលូតលាស់ ទម្ងន់ និងសញ្ញាដែលត្រូវយកចិត្តទុកដាក់ក្រោយសម្រាល។",
+                            },
+                            {
+                                "title": "តាមដានការលូតលាស់ និងការចាក់វ៉ាក់សាំង (Growth & Vaccination Guidance)",
+                                "description": "ផ្តល់ការណែនាំអំពីកាលវិភាគវ៉ាក់សាំង អាហារូបត្ថម្ភ ការលូតលាស់ និងការថែទាំកុមារតាមវ័យ។",
+                            },
+                        ],
+                        "appointmentLabel": "កក់ការណាត់ជួបកុមារ-ទារក (Book Pediatric Visit)",
+                        "actionIcon": "baby",
+                    },
+                },
+                {
+                    "title": "Hemodialysis Service",
+                    "khmer": "សេវា លាងឈាម",
+                    "image": _asset("img/dialysis.png"),
+                    "details": {
+                        "icon": "heart-pulse",
+                        "iconLabel": "Dialysis / Kidney Care",
+                        "title": "សេវា លាងឈាម",
+                        "subtitle": "Hemodialysis Service",
+                        "description": "ផ្តល់សេវាលាងឈាមសម្រាប់អ្នកជំងឺខ្សោយតម្រងនោម ដោយមានការតាមដានសុវត្ថិភាព និងការថែទាំដោយក្រុមវេជ្ជសាស្ត្រ។",
+                        "english": "Hemodialysis support for patients with kidney failure, with careful monitoring and clinical care.",
+                        "hours": "7:30 AM - 5:00 PM (Monday - Sunday)",
+                        "keyServices": "Hemodialysis, Kidney Failure Support, Patient Monitoring, Clinical Follow-up",
+                        "consultations": [
+                            {
+                                "title": "សេវាលាងឈាម (Hemodialysis Treatment)",
+                                "description": "ផ្តល់ការលាងឈាមតាមវេជ្ជបញ្ជាសម្រាប់អ្នកជំងឺខ្សោយតម្រងនោមរ៉ាំរ៉ៃ ឬត្រូវការការព្យាបាលបន្ត។",
+                            },
+                            {
+                                "title": "តាមដានសញ្ញាជីវិត និងសុវត្ថិភាព (Monitoring & Safety)",
+                                "description": "តាមដានសម្ពាធឈាម សញ្ញាជីវិត និងស្ថានភាពអ្នកជំងឺក្នុងអំឡុងពេលលាងឈាម។",
+                            },
+                            {
+                                "title": "ពិគ្រោះ និងណែនាំការថែទាំ (Consultation & Care Guidance)",
+                                "description": "ផ្តល់ការណែនាំអំពីការថែទាំសុខភាព ការបន្តព្យាបាល និងការណាត់ជួបតាមដានជាមួយវេជ្ជបណ្ឌិត។",
+                            },
+                        ],
+                        "appointmentLabel": "កក់ការណាត់ជួបលាងឈាម (Book Hemodialysis Visit)",
                     },
                 },
                 {
@@ -118,15 +257,33 @@ def site():
                     "details": {
                         "icon": "ambulance",
                         "iconLabel": "Ambulance / Emergency Red Cross",
-                        "title": "រថយន្តសង្គ្រោះបន្ទាន់",
-                        "subtitle": "Emergency Ambulance 24/7",
-                        "description": "ផ្តល់សេវារថយន្តសង្គ្រោះបន្ទាន់ និងសង្គ្រោះបឋម ២៤ ម៉ោងលើ ២៤ ម៉ោង ជាមួយឧបករណ៍វេជ្ជសាស្ត្រទំនើប និងក្រុមគ្រូពេទ្យសង្គ្រោះជំនាញ។",
-                        "english": "24/7 rapid-response emergency medical transportation and advanced on-site life support services.",
+                        "title": "សេវាសង្គ្រោះបន្ទាន់ និងបញ្ជូនអ្នកជំងឺ ២៤/៧",
+                        "subtitle": "24/7 Rapid Emergency Response & Transfer",
+                        "description": "ផ្តល់ការឆ្លើយតបបន្ទាន់ក្នុងការចុះទទួលអ្នកជំងឺដល់គេហដ្ឋាន កន្លែងកើតហេតុ ឬគ្រោះថ្នាក់ចរាចរណ៍ ២៤ម៉ោងលើ២៤ម៉ោង ដោយសុវត្ថិភាព និងទាន់ពេលវេលា។",
+                        "english": "Emergency Ambulance 24/7",
                         "availability": "២៤ ម៉ោង / ៧ ថ្ងៃ (24 Hours / 7 Days)",
                         "hotline": "119 / 097 98 12 812",
                         "callNow": "097 98 12 812",
                         "callLabel": "ហៅរថយន្តសង្គ្រោះ (Call Now)",
                         "learnMoreLabel": "ស្វែងយល់បន្ថែម (Learn More)",
+                        "consultations": [
+                            {
+                                "title": "បរិក្ខារទ្រទ្រង់ជីវិតកម្រិតធ្ងន់ចល័ត (Advanced Life Support & Mobile ICU)",
+                                "description": "រថយន្តបំពាក់ដោយម៉ាស៊ីនជំនួយដង្ហើម (Ventilator/CPAP) ម៉ាស៊ីនឆក់បេះដូង (Defibrillator/AED) ម៉ូនីទ័រតាមដានសញ្ញាជីវិត (Vital Signs Monitor) និងធុងអុកស៊ីសែនវេជ្ជសាស្ត្រស្តង់ដារ។",
+                            },
+                            {
+                                "title": "ក្រុមគ្រូពេទ្យ និងគិលានុបដ្ឋាកសង្គ្រោះបន្ទាន់ (Specialized Paramedic & Medical Team)",
+                                "description": "មានវត្តមានវេជ្ជបណ្ឌិត និងគិលានុបដ្ឋាកជំនាញសង្គ្រោះបឋមផ្ទាល់នៅលើរថយន្ត ដើម្បីផ្តល់ការព្យាបាលសង្គ្រោះបន្ទាន់ភ្លាមៗក្នុងពេលធ្វើដំណើរ។",
+                            },
+                            {
+                                "title": "សេវាផ្ទេរ និងបញ្ជូនអ្នកជំងឺអន្តរមន្ទីរពេទ្យ (Inter-Hospital & Cross-Province Referral)",
+                                "description": "សេវាបញ្ជូនអ្នកជំងឺសម្រាកព្យាបាលបន្តរវាងមន្ទីរពេទ្យ និងមន្ទីរពេទ្យ ទូទាំងរាជធានី-ខេត្ត ឬបញ្ជូនបន្តទៅកាន់ព្រំដែន និងជើងហោះហើរវេជ្ជសាស្ត្រ (Medevac)។",
+                            },
+                            {
+                                "title": "សេវារថយន្តសង្គ្រោះប្រចាំការក្នុងព្រឹត្តិការណ៍ (Event Standby & Medical Coverage)",
+                                "description": "ផ្តល់សេវារថយន្តសង្គ្រោះ និងក្រុមបុគ្គលិកសុខាភិបាលប្រចាំការសម្រាប់ការប្រគំតន្ត្រី ការប្រកួតកីឡា កិច្ចប្រជុំ ឬកម្មវិធីសាធារណៈធំៗ។",
+                            },
+                        ],
                     },
                 },
                 {
@@ -145,6 +302,28 @@ def site():
                         "callNow": "097 98 12 812",
                         "callLabel": "ទាក់ទងបន្ទាន់ (Emergency Call)",
                         "learnMoreLabel": "ស្វែងយល់បន្ថែម (Learn More)",
+                        "consultations": [
+                            {
+                                "title": "សេវាសង្គ្រោះបន្ទាន់ ២៤ម៉ោង (24/7 Emergency Medical Care)",
+                                "description": "ផ្តល់ការពិនិត្យ ធ្វើរោគវិនិច្ឆ័យ និងព្យាបាលបន្ទាន់ចំពោះករណីគ្រោះថ្នាក់ចរាចរណ៍ របួសធ្ងន់ធ្ងរ ឬស្ថានភាពជំងឺដែលគំរាមកំហែងដល់អាយុជីវិតភ្លាមៗ។",
+                            },
+                            {
+                                "title": "ការសង្គ្រោះបន្ទាន់ផ្នែកបេះដូង និងសរសៃឈាម (Cardiac & Stroke Emergency)",
+                                "description": "ការអន្តរាគមន៍រហ័សទាន់ពេលចំពោះជំងឺគាំងបេះដូង (Myocardial Infarction) ដាច់សរសៃឈាមខួរក្បាល (Stroke) និងចង្វាក់បេះដូងលោតខុសប្រក្រតីធ្ងន់ធ្ងរ។",
+                            },
+                            {
+                                "title": "បន្ទប់សង្គ្រោះបន្ទាន់កម្រិតធ្ងន់ និងប្រព័ន្ធជំនួយដង្ហើម (Intensive Care Unit & Mechanical Ventilation)",
+                                "description": "បំពាក់ប្រព័ន្ធម៉ាស៊ីនជំនួយដង្ហើមកម្រិតខ្ពស់ (ICU Ventilators) ម៉ាស៊ីនបូមស្លេស្ម និងការតាមដានសញ្ញាជីវិតជាបន្តបន្ទាប់ ២៤/៧ ដោយប្រព័ន្ធឌីជីថល (Hemodynamic Monitoring)។",
+                            },
+                            {
+                                "title": "ការគ្រប់គ្រងការឆ្លងមេរោគក្នុងឈាមធ្ងន់ធ្ងរ និងការដួលសន្លប់ (Sepsis & Shock Management)",
+                                "description": "ការធ្វើរោគវិនិច្ឆ័យរហ័ស ផ្តល់ថ្នាំ និងសារធាតុរាវតាមសរសៃឈាមដើម្បីទប់ទល់នឹងស្ថានភាពឆ្លងមេរោគចូលចរន្តឈាមធ្ងន់ធ្ងរ និងសម្ពាធឈាមធ្លាក់ចុះខ្លាំង។",
+                            },
+                            {
+                                "title": "ការថែទាំយ៉ាងយកចិត្តទុកដាក់បន្ទាប់ពីការវះកាត់ធំៗ (Post-Surgical Critical Care)",
+                                "description": "ការតាមដាន និងថែទាំអ្នកជំងឺក្រោយការវះកាត់ធំៗ ដើម្បីទប់ស្កាត់ផលវិបាក និងជួយឱ្យអ្នកជំងឺឆាប់ដឹងខ្លួន និងមានសុវត្ថិភាពខ្ពស់។",
+                            },
+                        ],
                     },
                 },
                 {
@@ -160,6 +339,28 @@ def site():
                         "english": "Comfortable accommodations and 24/7 round-the-clock inpatient nursing and multidisciplinary medical care.",
                         "careCoverage": "២៤ ម៉ោង / ៧ ថ្ងៃ (24/7 Nursing & Doctor Rounds)",
                         "roomTypes": "Standard Ward, Semi-Private, VIP Suite, Deluxe Room",
+                        "consultations": [
+                            {
+                                "title": "បន្ទប់សម្រាកព្យាបាលចម្រុះ និងឯកជន (Standard & VIP Patient Rooms)",
+                                "description": "ជម្រើសបន្ទប់ទូលាយ មានអនាម័យខ្ពស់ បំពាក់គ្រែពេទ្យស្វ័យប្រវត្តិ ម៉ាស៊ីនត្រជាក់ ទូរទស្សន៍ ប្រព័ន្ធហៅគិលានុបដ្ឋាកបន្ទាន់ (Nurse Call System) និងបន្ទប់ទឹកស្អាតដាច់ដោយឡែក។",
+                            },
+                            {
+                                "title": "ការតាមដានសុខភាព និងសញ្ញាជីវិត ២៤/៧ (Round-the-Clock Clinical Monitoring)",
+                                "description": "ក្រុមគិលានុបដ្ឋាក និងវេជ្ជបណ្ឌិតប្រចាំការតាមដានសញ្ញាជីវិត ការផ្តល់ថ្នាំ និងការចាក់សេរ៉ូមតាមវេជ្ជបញ្ជាយ៉ាងត្រឹមត្រូវ និងទៀងទាត់ពេញមួយថ្ងៃ និងមួយយប់។",
+                            },
+                            {
+                                "title": "ការថែទាំអ្នកជំងឺក្រោយការវះកាត់ (Post-Operative Recovery Care)",
+                                "description": "ការគ្រប់គ្រងការឈឺចាប់ ការសម្អាត និងផ្លាស់ប្តូរបង់របួសដោយបច្ចេកទេសគ្មានមេរោគ (Aseptic Technique) និងការជួយស្តារនីតិសម្បទាឱ្យឆាប់ជាសះស្បើយឡើងវិញ។",
+                            },
+                            {
+                                "title": "សេវាអាហារូបត្ថម្ភវេជ្ជសាស្ត្រសម្រាប់អ្នកជំងឺ (Clinical Nutrition & Dietetic Support)",
+                                "description": "ការរៀបចំរបបអាហារមានអនាម័យ និងត្រឹមត្រូវតាមលក្ខខណ្ឌជំងឺជាក់ស្តែងរបស់អ្នកជំងឺម្នាក់ៗ (ដូចជា របបអាហារអ្នកជំងឺទឹកនោមផ្អែម លើសឈាម ឬក្រោយវះកាត់)។",
+                            },
+                            {
+                                "title": "សេវាពិគ្រោះជំងឺដោយវេជ្ជបណ្ឌិតឯកទេសចម្រុះ (Multidisciplinary Specialist Rounds)",
+                                "description": "ការចុះពិនិត្យតាមដានស្ថានភាពជំងឺផ្ទាល់ជារៀងរាល់ថ្ងៃដោយវេជ្ជបណ្ឌិតជំនាញឯកទេសចម្រុះ ដើម្បីវាយតម្លៃ និងកែសម្រួលផែនការព្យាបាលឱ្យកាន់តែមានប្រសិទ្ធភាព។",
+                            },
+                        ],
                         "appointmentLabel": "កក់បន្ទប់សម្រាក (Reserve Room)",
                         "actionIcon": "bed",
                     },
@@ -177,6 +378,28 @@ def site():
                         "english": "Safe, compassionate, and comprehensive maternity care from prenatal health checks to natural/C-section delivery and postpartum recovery.",
                         "coverage": "២៤ ម៉ោង / ៧ ថ្ងៃ (24/7 Delivery & Emergency Care)",
                         "deliveryTypes": "Natural Delivery, Painless Delivery (Epidural), C-Section (វះកាត់)",
+                        "consultations": [
+                            {
+                                "title": "ការតាមដានសុខភាពគភ៌មុនពេលសម្រាល (Comprehensive Antenatal Care - ANC)",
+                                "description": "ពិនិត្យសុខភាពម្តាយ និងការលូតលាស់របស់ទារកក្នុងផ្ទៃ អេកូសាស្ត្រ 4D/5D ពិនិត្យឈាមស្វែងរកភាពមិនប្រក្រតីនៃហ្សែន និងចាក់វ៉ាក់សាំងការពារជំងឺចាំបាច់សម្រាប់ស្ត្រីមានផ្ទៃពោះ។",
+                            },
+                            {
+                                "title": "សេវាសម្រាលកូនតាមបែបធម្មជាតិ (Natural Labor & Normal Delivery)",
+                                "description": "ការសម្រាលកូនតាមផ្លូវធម្មជាតិប្រកបដោយផាសុកភាព ភាពកក់ក្តៅ និងសុវត្ថិភាព ក្រោមការមើលថែដិតដល់ពីឆ្មបជំនាញ រួមជាមួយជម្រើសសម្រាលមិនឈឺចាប់ (Painless Delivery/Epidural)។",
+                            },
+                            {
+                                "title": "ការសម្រាលកូនដោយការវះកាត់ (Cesarean Section - C-Section)",
+                                "description": "បន្ទប់វះកាត់ស្តង់ដារបច្ចេកទេសទំនើប និងគ្មានមេរោគ ជាមួយក្រុមវេជ្ជបណ្ឌិតវះកាត់សម្ភព និងវេជ្ជបណ្ឌិតឯកទេសសណ្តំ សម្រាប់ករណីសម្រាលបន្ទាន់ ឬករណីគភ៌ពិបាកសម្រាល។",
+                            },
+                            {
+                                "title": "ការថែទាំ និងសង្គ្រោះទារកទើបនឹងកើត (Neonatal Care & NICU)",
+                                "description": "ការពិនិត្យសុខភាពទារកភ្លាមៗក្រោយកើត បរិក្ខារកម្ដៅទារក និងមានផ្នែកសង្គ្រោះទារកទើបនឹងកើតកម្រិតធ្ងន់ (NICU) ត្រៀមរួចជាស្រេចសម្រាប់ករណីទារកកើតមិនគ្រប់ខែ ឬមានបញ្ហាដង្ហើម។",
+                            },
+                            {
+                                "title": "ការថែទាំមាតា និងទារកក្រោយពេលសម្រាល (Postnatal & Newborn Care)",
+                                "description": "ការតាមដានសុខភាពស្បូន និងមុខរបួសម្តាយ ការណែនាំអំពីការបំបៅដោះកូនដោយទឹកដោះម្តាយ និងការចាក់វ៉ាក់សាំងការពារជំងឺដំបូងដល់ទារកទើបកើត។",
+                            },
+                        ],
                         "appointmentLabel": "កក់កញ្ចប់សម្រាល (Maternity Packages)",
                         "actionIcon": "baby",
                     },
@@ -194,6 +417,28 @@ def site():
                         "english": "Advanced general, laparoscopic, and specialized surgical procedures performed in sterile modern operating suites by expert surgical teams.",
                         "operatingTheaters": "២៤ ម៉ោង / ៧ ថ្ងៃ សម្រាប់ករណីសង្គ្រោះបន្ទាន់ (24/7 Emergency Surgery)",
                         "techniques": "Minimally Invasive / Laparoscopy, Open Surgery, Day Surgery",
+                        "consultations": [
+                            {
+                                "title": "ការវះកាត់ចោះដោយម៉ាស៊ីនទំនើប (Laparoscopic & Minimally Invasive Surgery)",
+                                "description": "ការវះកាត់ចោះខ្នាតតូច ដូចជាការវះកាត់ខ្នែងពោះវៀន ថង់ប្រមាត់ និងដុំសាច់ ដែលកាត់បន្ថយការឈឺចាប់ ស្លាកស្នាមតូច មិនបាត់បង់ឈាមច្រើន និងឆាប់បានចេញទៅផ្ទះវិញ។",
+                            },
+                            {
+                                "title": "ការវះកាត់ទូទៅ និងប្រព័ន្ធរំលាយអាហារ (General & Gastrointestinal Surgery)",
+                                "description": "ការព្យាបាលវះកាត់ជំងឺក្លន (Hernia) ដុំសាច់លើស្បែក និងជាលិកា ការវះកាត់ក្រពះ ពោះវៀនធំ និងជំងឺឫសដូងបាតដោយបច្ចេកវិទ្យាទំនើប។",
+                            },
+                            {
+                                "title": "ការវះកាត់ឯកទេសឆ្អឹង និងសន្លាក់ (Orthopedic & Trauma Surgery)",
+                                "description": "ការវះកាត់តឆ្អឹងបាក់ដោយគ្រោះថ្នាក់ ការព្យាបាលការរងរបួសសន្លាក់ សរសៃពួរ និងការវះកាត់ផ្លាស់ប្តូរសន្លាក់សិប្បនិម្មិត។",
+                            },
+                            {
+                                "title": "បន្ទប់វះកាត់ស្តង់ដារអន្តរជាតិ និងប្រព័ន្ធសណ្តំទំនើប (Standard Operating Suites & Anesthesia Care)",
+                                "description": "បំពាក់ម៉ាស៊ីនសណ្តំកម្រិតខ្ពស់ ឧបករណ៍ត្រួតពិនិត្យសញ្ញាជីវិតច្បាស់លាស់ និងប្រព័ន្ធគ្រប់គ្រងការឆ្លងរោគយ៉ាងតឹងរ៉ឹងបំផុតអំឡុងពេលវះកាត់។",
+                            },
+                            {
+                                "title": "ការតាមដាន និងថែទាំក្នុងបន្ទប់ដាស់ (Post-Anesthesia Care Unit - PACU)",
+                                "description": "ការមើលថែដិតដល់ភ្លាមៗក្រោយពេលវះកាត់រួច គ្រប់គ្រងការឈឺចាប់ និងតាមដានការដឹងខ្លួនឡើងវិញរបស់អ្នកជំងឺឱ្យមានស្ថិរភាពមុនពេលបញ្ជូនទៅបន្ទប់សម្រាក។",
+                            },
+                        ],
                         "appointmentLabel": "ពិគ្រោះជាមួយវេជ្ជបណ្ឌិតវះកាត់ (Book Consultation)",
                         "actionIcon": "scissors",
                     },
@@ -209,8 +454,118 @@ def site():
                         "subtitle": "More Services & Specialties",
                         "description": "ផ្តល់សេវាពិនិត្យ ពិគ្រោះ ព្យាបាល និងថែទាំសុខភាពគ្រប់ជ្រុងជ្រោយលើផ្នែកឯកទេសជាច្រើន ដោយក្រុមវេជ្ជបណ្ឌិត និងអ្នកជំនាញវេជ្ជសាស្ត្រ។",
                         "english": "Comprehensive clinical departments, specialized consultations, diagnostic care, and support therapies.",
-                        "departments": "ENT, Dental, Hemodialysis, Mental Health, Physiotherapy, STDs, HIV/PrEP",
-                        "serviceAvailability": "ពិគ្រោះជំងឺក្រៅ និងសង្គ្រោះបន្ទាន់ (OPD Consultations & In-Hospital Care)",
+                        "departments": "Emergency, Inpatient, Outpatient, Laboratory, Blood Bank, X-Ray, Echography",
+                        "serviceAvailability": "សម្រាកព្យាបាល ២៤ម៉ោង ពិគ្រោះព្យាបាល និងសេវាអមវេជ្ជសាស្ត្រ (24/7 Inpatient, Outpatient & Support Services)",
+                        "consultations": [
+                            {
+                                "title": "សេវាសម្រាកព្យាបាល ២៤ម៉ោង: រថយន្តគិលានសង្គ្រោះ (Ambulance)",
+                                "description": "សេវាដឹកជញ្ជូន និងសង្គ្រោះបន្ទាន់ចល័ត ២៤ម៉ោង។",
+                            },
+                            {
+                                "title": "សេវាសម្រាកព្យាបាល ២៤ម៉ោង: សង្គ្រោះបន្ទាន់ (Emergency)",
+                                "description": "ការទទួលពិនិត្យ និងសង្គ្រោះអ្នកជំងឺបន្ទាន់ទាន់ពេលវេលា។",
+                            },
+                            {
+                                "title": "សេវាសម្រាកព្យាបាល ២៤ម៉ោង: របួសវះកាត់ (Surgery-Trauma)",
+                                "description": "សេវាសង្គ្រោះរបួសធ្ងន់ធ្ងរ និងការវះកាត់បន្ទាន់។",
+                            },
+                            {
+                                "title": "សេវាសម្រាកព្យាបាល ២៤ម៉ោង: ជំងឺទូទៅ (General Medicine)",
+                                "description": "ការពិនិត្យ និងសម្រាកព្យាបាលជំងឺទូទៅ ២៤ម៉ោង។",
+                            },
+                            {
+                                "title": "សេវាសម្រាកព្យាបាល ២៤ម៉ោង: ប្រពោធនកម្ម (Intensive Care)",
+                                "description": "ការសង្គ្រោះ និងថែទាំអ្នកជំងឺធ្ងន់ធ្ងរកម្រិតខ្ពស់ (ICU)។",
+                            },
+                            {
+                                "title": "សេវាសម្រាកព្យាបាល ២៤ម៉ោង: សម្ភព-រោគស្ត្រី (Gyneco-Maternity)",
+                                "description": "សេវាសម្រាលកូន និងសង្គ្រោះបន្ទាន់ផ្នែកសម្ភព និងរោគស្ត្រី។",
+                            },
+                            {
+                                "title": "សេវាសម្រាកព្យាបាល ២៤ម៉ោង: ជំងឺកុមារ-ទារក (Paediatric-Neonate)",
+                                "description": "ការថែទាំ និងសង្គ្រោះបន្ទាន់ជំងឺកុមារ និងទារកទើបនឹងកើត។",
+                            },
+                            {
+                                "title": "សេវាសម្រាកព្យាបាល ២៤ម៉ោង: ជំងឺរបេង (Tuberculosis)",
+                                "description": "ការទទួល និងថែទាំអ្នកជំងឺរបេងសម្រាកពេទ្យ ២៤ម៉ោង។",
+                            },
+                            {
+                                "title": "សេវាសម្រាកព្យាបាល ២៤ម៉ោង: ចក្ខុរោគ (Ophtalmology)",
+                                "description": "សេវាសង្គ្រោះ និងព្យាបាលបញ្ហាភ្នែកបន្ទាន់។",
+                            },
+                            {
+                                "title": "សេវាសម្រាកព្យាបាល ២៤ម៉ោង: បន្ទប់ដាក់ដាច់ដោយឡែក (Isolation Room)",
+                                "description": "បន្ទប់សម្រាកព្យាបាលដាច់ដោយឡែកសម្រាប់ជំងឺឆ្លងកម្រិតខ្ពស់។",
+                            },
+                            {
+                                "title": "សេវាពិគ្រោះព្យាបាល: ជំងឺទូទៅ (General Medicine)",
+                                "description": "ពិគ្រោះ និងព្យាបាលជំងឺទូទៅសម្រាប់មនុស្សពេញវ័យ។",
+                            },
+                            {
+                                "title": "សេវាពិគ្រោះព្យាបាល: របួសវះកាត់ (Surgery-Trauma)",
+                                "description": "ពិនិត្យ ព្យាបាលរបួស លាងរបួស និងពិគ្រោះជំងឺវះកាត់។",
+                            },
+                            {
+                                "title": "សេវាពិគ្រោះព្យាបាល: ជំងឺកុមារ (Pediatric)",
+                                "description": "ពិគ្រោះ ពិនិត្យសុខភាព និងព្យាបាលជំងឺកុមារគ្រប់វ័យ។",
+                            },
+                            {
+                                "title": "សេវាពិគ្រោះព្យាបាល: សម្ភព-រោគស្ត្រី (Gyneco-Maternity)",
+                                "description": "ពិនិត្យផ្ទៃពោះ ពិគ្រោះបញ្ហារោគស្ត្រី និងសុខភាពមាតា។",
+                            },
+                            {
+                                "title": "សេវាពិគ្រោះព្យាបាល: ទឹកនោមផ្អែម-ឡើងសម្ពាធឈាម (Non Communicable Disease)",
+                                "description": "ពិនិត្យ តាមដាន និងបើកថ្នាំជំងឺទឹកនោមផ្អែម លើសឈាម និងជំងឺមិនឆ្លងរ៉ាំរ៉ៃ។",
+                            },
+                            {
+                                "title": "សេវាពិគ្រោះព្យាបាល: សេវាលាងឈាម (Hemodialysis)",
+                                "description": "សេវាលាងឈាមសម្រាប់អ្នកជំងឺខ្សោយតម្រងនោមរ៉ាំរ៉ៃ និងស្រួចស្រាវ។",
+                            },
+                            {
+                                "title": "សេវាពិគ្រោះព្យាបាល: ត្រចៀក ច្រមុះ បំពង់ក (E.N.T)",
+                                "description": "ពិនិត្យ និងព្យាបាលជំងឺត្រចៀក ច្រមុះ បំពង់ក និងផ្លូវដង្ហើមផ្នែកខាងលើ។",
+                            },
+                            {
+                                "title": "សេវាពិគ្រោះព្យាបាល: ជំងឺរបេង (Tuberculosis)",
+                                "description": "ពិគ្រោះ ពិនិត្យស្លេស្ម តាមដាន និងបើកថ្នាំព្យាបាលជំងឺរបេង។",
+                            },
+                            {
+                                "title": "សេវាពិគ្រោះព្យាបាល: ព្យាបាលដោយចលនា (Physiotherapy)",
+                                "description": "សេវាស្តារនីតិសម្បទា និងកាយវប្បកម្មព្យាបាលដោយចលនា។",
+                            },
+                            {
+                                "title": "សេវាពិគ្រោះព្យាបាល: សេវាព្យាបាលបន្ត (OI/ART)",
+                                "description": "សេវាពិគ្រោះ តាមដានសុខភាព និងបើកថ្នាំប្រឆាំងមេរោគអេដស៍។",
+                            },
+                            {
+                                "title": "សេវាពិគ្រោះព្យាបាល: សុខភាពផ្លូវចិត្ត (Mental Health)",
+                                "description": "សេវាប្រឹក្សាយោបល់ និងព្យាបាលបញ្ហាសុខភាពផ្លូវចិត្ត និងអារម្មណ៍។",
+                            },
+                            {
+                                "title": "សេវាពិគ្រោះព្យាបាល: សុខភាពគ្រួសារ (S.T.D)",
+                                "description": "ពិនិត្យ ព្យាបាលជំងឺកាមរោគ និងផ្តល់ការប្រឹក្សាផែនការគ្រួសារ។",
+                            },
+                            {
+                                "title": "សេវាអមវេជ្ជសាស្ត្រ និងជំនួយ: មន្ទីរពិសោធន៍លំដាប់ផ្កាយ៣ (Laboratory - 3-Star Level)",
+                                "description": "សេវាវិភាគឈាម ទឹកនោម និងជីវគីមីវេជ្ជសាស្ត្រស្តង់ដារគុណភាពផ្កាយ៣។",
+                            },
+                            {
+                                "title": "សេវាអមវេជ្ជសាស្ត្រ និងជំនួយ: សេវាផ្តល់ឈាម (Blood Bank)",
+                                "description": "ធនាគារឈាមស្តុកទុក និងផ្តល់ឈាមសុវត្ថិភាពសម្រាប់សង្គ្រោះបន្ទាន់។",
+                            },
+                            {
+                                "title": "សេវាអមវេជ្ជសាស្ត្រ និងជំនួយ: វិទ្យាសាស្ត្រ / អ៊ិចរ៉េ (X-Ray)",
+                                "description": "សេវាថតឆ្លុះកាំរស្មីអ៊ិចវិភាគឆ្អឹង សួត និងសរីរាង្គខាងក្នុង។",
+                            },
+                            {
+                                "title": "សេវាអមវេជ្ជសាស្ត្រ និងជំនួយ: អេកូសាស្ត្រ (Echography)",
+                                "description": "សេវាពិនិត្យអេកូពោះ អេកូគភ៌ និងសរីរាង្គផ្សេងៗ។",
+                            },
+                            {
+                                "title": "សេវាអមវេជ្ជសាស្ត្រ និងជំនួយ: ផ្ទះបាយ (Kitchen)",
+                                "description": "សេវាផ្គត់ផ្គង់ និងរៀបចំអាហារូបត្ថម្ភសម្រាប់អ្នកជំងឺសម្រាកព្យាបាល។",
+                            },
+                        ],
                         "learnMoreLabel": "ស្វែងរកសេវាកម្ម (Explore All Services)",
                         "appointmentLabel": "កក់ការណាត់ជួប (Book Appointment)",
                     },

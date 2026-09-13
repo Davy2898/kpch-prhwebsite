@@ -1,5 +1,6 @@
-{% extends "base.html" %}
+{% extends "admin/base.html" %}
 {% block title %}{{ 'Edit' if page else 'New' }} Page - Admin{% endblock %}
+{% block admin_heading %}{{ 'Edit' if page else 'New' }} Page{% endblock %}
 {% block content %}
   <div class="admin-page">
     <div class="flex items-center justify-between mb-6">
