@@ -1,4 +1,6 @@
 .env
+.env.*
+!.env.sample
 docker.env
 .npm-cache/
 .uv-cache/
@@ -9,3 +11,11 @@ node_modules/
 instance/
 __pycache__/
 *.py[cod]
+.pytest_cache/
+dist/
+build/
+nul
+cloudflared.exe
+*.log
+reach.sqlite3
+scratch_posts.json

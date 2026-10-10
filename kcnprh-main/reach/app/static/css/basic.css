@@ -1,4 +1,4 @@
-body{font-family:'Noto Sans Khmer','Khmer OS Siemreap','Inter',system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;margin: 0;padding: 0;line-height:1.6}
+body{font-family:'Kantumruy Pro','Khmer OS Siemreap','Inter',system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;margin: 0;padding: 0;line-height:1.6}
 header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem}
 header a{text-decoration:none;color:#333}
 nav a{margin-right:1rem}
@@ -126,7 +126,7 @@ main{
 /* Grid utility for cards */
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1rem}
 .grid .card h3{margin:.2rem 0 .4rem}
-.grid .card h3, .grid .card h3 a{font-family:'Noto Serif Khmer','Noto Sans Khmer','Khmer OS Siemreap','Inter',system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;font-weight:inherit}
+.grid .card h3, .grid .card h3 a{font-family:'Kantumruy Pro','Khmer OS Siemreap','Inter',system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;font-weight:inherit}
 .grid .meta{color:var(--muted);font-size:.9rem}
 .card img{width:100%;height:160px;object-fit:cover;margin-bottom:.5rem;border-radius:10px}
 /* Card actions */
@@ -270,7 +270,7 @@ body.admin{
   min-height:100vh;
   background:#f3f7f5;
   color:#182235;
-  font-family:Inter,"Noto Sans Khmer",system-ui,sans-serif;
+  font-family:Inter,"Kantumruy Pro",system-ui,sans-serif;
 }
 body.admin .admin-layout{
   display:grid;
@@ -508,13 +508,16 @@ body.admin .admin-filter-bar label span{
 body.admin .admin-filter-bar input,
 body.admin .admin-filter-bar select{
   width:100%;
+  height:2.8rem;
+  box-sizing:border-box;
   min-width:0;
   border:1px solid #cbd5e1;
   border-radius:8px;
   background:#fff;
   color:#101828;
   font-size:.94rem;
-  padding:.68rem .78rem;
+  line-height:1.2;
+  padding:0 .78rem;
 }
 body.admin .admin-filter-bar input::placeholder{
   color:#98a2b3;
@@ -536,11 +539,14 @@ body.admin .admin-filter-actions a{
   display:inline-flex;
   align-items:center;
   justify-content:center;
-  min-height:2.55rem;
+  height:2.8rem;
+  box-sizing:border-box;
   border-radius:8px;
   font-size:.92rem;
   font-weight:800;
-  padding:.65rem .9rem;
+  line-height:1.2;
+  padding:0 .95rem;
+  margin:7px;
 }
 body.admin .admin-filter-actions button{
   border:1px solid #087a5a;

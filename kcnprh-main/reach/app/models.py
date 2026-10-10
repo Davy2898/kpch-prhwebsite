@@ -111,3 +111,66 @@ class User(db.Model):
     address = db.Column("address", db.Text)
     regDate = db.Column("regdate", db.BigInteger)  # Kept as-is to reflect source schema
     isActive = db.Column("isactive", db.BigInteger)
+
+
+class SiteSetting(db.Model):
+    __tablename__ = "tblsitesettings"
+    __table_args__ = {"schema": "newsportal"}
+
+    id = db.Column("id", db.Integer, primary_key=True, autoincrement=True)
+    settingKey = db.Column("setting_key", db.String(100), unique=True, index=True)
+    settingValue = db.Column("setting_value", db.Text)
+    updatedAt = db.Column("updated_at", db.DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+def get_visitor_count() -> int:
+    try:
+        setting = SiteSetting.query.filter_by(settingKey="visitor_count").first()
+        if not setting:
+            setting = SiteSetting(settingKey="visitor_count", settingValue="4022694")
+            db.session.add(setting)
+            db.session.commit()
+            return 4022694
+        return int(setting.settingValue)
+    except Exception:
+        db.session.rollback()
+        return 4022694
+
+
+def increment_visitor_count(step: int = 1) -> int:
+    try:
+        setting = SiteSetting.query.filter_by(settingKey="visitor_count").first()
+        if not setting:
+            current = 4022694 + step
+            setting = SiteSetting(settingKey="visitor_count", settingValue=str(current))
+            db.session.add(setting)
+        else:
+            try:
+                current = int(setting.settingValue) + step
+            except (ValueError, TypeError):
+                current = 4022694 + step
+            setting.settingValue = str(current)
+            setting.updatedAt = datetime.utcnow()
+        db.session.commit()
+        return current
+    except Exception:
+        db.session.rollback()
+        return get_visitor_count()
+
+
+def set_visitor_count(new_count: int) -> int:
+    try:
+        setting = SiteSetting.query.filter_by(settingKey="visitor_count").first()
+        if not setting:
+            setting = SiteSetting(settingKey="visitor_count", settingValue=str(new_count))
+            db.session.add(setting)
+        else:
+            setting.settingValue = str(new_count)
+            setting.updatedAt = datetime.utcnow()
+        db.session.commit()
+        return new_count
+    except Exception:
+        db.session.rollback()
+        return get_visitor_count()
+
+

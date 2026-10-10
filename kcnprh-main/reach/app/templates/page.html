@@ -1,8 +1,0 @@
-{% extends "base.html" %}
-{% block title %}{{ page.PageTitle or page.PageName }} - Reach News{% endblock %}
-{% block content %}
-  <article class="static-page">
-    <h2>{{ page.PageTitle or page.PageName }}</h2>
-    <div class="page-body">{{ page.Description|safe }}</div>
-  </article>
-{% endblock %}

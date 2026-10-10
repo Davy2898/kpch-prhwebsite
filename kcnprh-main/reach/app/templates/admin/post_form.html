@@ -44,6 +44,15 @@
       <p class="text-xs text-slate-500 mt-1">You can format content using the editor.</p>
     </div>
     <div>
+      <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Facebook embed</label>
+      <textarea
+        id="FacebookEmbedInput"
+        class="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white/90 dark:bg-slate-900/60 px-3 py-2 text-sm outline-none focus:ring-4 focus:ring-emerald-500/30 focus:border-emerald-500"
+        rows="4"
+        placeholder="Paste a Facebook post/reel URL or the full Facebook iframe embed code"></textarea>
+      <p class="text-xs text-slate-500 mt-1">Supports Facebook post and video iframe embeds.</p>
+    </div>
+    <div>
       <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Image</label>
       <input type="hidden" name="RemovePostImage" id="RemovePostImage" value="0" />
       {% if post and post.PostImage %}
@@ -114,11 +123,14 @@
         const input = document.createElement('input');
         input.setAttribute('type', 'file');
         input.setAttribute('accept', 'image/*');
+        input.setAttribute('multiple', 'multiple');
         input.click();
         input.onchange = async () => {
-          const file = input.files && input.files[0];
-          if(!file) return;
-          await uploadImage(file);
+          const files = Array.from(input.files || []);
+          if(!files.length) return;
+          for(const file of files){
+            await uploadImage(file);
+          }
         };
       }
 
@@ -144,8 +156,97 @@
       // Sync Quill HTML into hidden textarea on submit
       var form = document.querySelector('form');
       var hidden = document.getElementById('PostDetailsHidden');
-      form.addEventListener('submit', function(){
-        hidden.value = quill.root.innerHTML;
+      var originalPostDetails = hidden.value || '';
+      var facebookEmbedInput = document.getElementById('FacebookEmbedInput');
+
+      function escapeAttribute(value){
+        return String(value)
+          .replace(/&/g, '&amp;')
+          .replace(/"/g, '&quot;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;');
+      }
+
+      function isFacebookHost(hostname){
+        return /^(www\.|web\.)?facebook\.com$/i.test(hostname);
+      }
+
+      function buildFacebookEmbed(rawValue){
+        var value = (rawValue || '').trim();
+        if(!value) return '';
+        var postWidth = 540;
+
+        var iframe = null;
+        if(value.indexOf('<iframe') !== -1){
+          var box = document.createElement('div');
+          box.innerHTML = value;
+          iframe = box.querySelector('iframe');
+          if(!iframe) throw new Error('Facebook iframe code was not found.');
+        }
+
+        var src = iframe ? iframe.getAttribute('src') : '';
+        if(!src && /^https?:\/\/(www\.|web\.)?facebook\.com\//i.test(value)){
+          src = 'https://www.facebook.com/plugins/post.php?href=' + encodeURIComponent(value) + '&show_text=true&width=' + postWidth;
+        }
+        if(!src) {
+          throw new Error('Paste a Facebook URL or Facebook iframe embed code.');
+        }
+
+        var url = new URL(src, window.location.href);
+        if(url.protocol !== 'https:' || !isFacebookHost(url.hostname) || !/^\/plugins\/(post|video)\.php$/i.test(url.pathname)){
+          throw new Error('Only Facebook post/video embed iframe code is supported.');
+        }
+
+        var isVideo = /\/plugins\/video\.php$/i.test(url.pathname);
+        var wrapperClass = isVideo ? 'facebook-video-embed' : 'facebook-post-embed';
+        var sourceWidth = parseInt(iframe && iframe.getAttribute('width'), 10) || 500;
+        var sourceHeight = parseInt(iframe && iframe.getAttribute('height'), 10) || 860;
+        var width = isVideo ? (parseInt(iframe && iframe.getAttribute('width'), 10) || 560) : postWidth;
+        var height = isVideo ? (parseInt(iframe && iframe.getAttribute('height'), 10) || 314) : Math.max(640, Math.min(940, Math.round(sourceHeight * (postWidth / sourceWidth))));
+        if(!isVideo){
+          url.searchParams.set('width', String(postWidth));
+          if(!url.searchParams.has('show_text')) url.searchParams.set('show_text', 'true');
+        }
+
+        return '<div class="' + wrapperClass + '"><iframe src="' + escapeAttribute(url.toString()) +
+          '" title="Facebook embed" width="' + width + '" height="' + height +
+          '" scrolling="no" frameborder="0" allowfullscreen="true" allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"></iframe></div>';
+      }
+
+      function extractOriginalFacebookEmbeds(html){
+        if(!html || html.indexOf('facebook.com/plugins/') === -1) return '';
+        var box = document.createElement('div');
+        box.innerHTML = html;
+        return Array.from(box.querySelectorAll('iframe[src*="facebook.com/plugins/"]')).map(function(iframe){
+          var parent = iframe.parentElement;
+          if(parent && (
+            parent.classList.contains('facebook-post-embed') ||
+            parent.classList.contains('facebook-video-embed') ||
+            parent.classList.contains('fb-post-embed')
+          )){
+            return parent.outerHTML;
+          }
+          return buildFacebookEmbed(iframe.outerHTML);
+        }).join('');
+      }
+
+      form.addEventListener('submit', function(e){
+        var editorHtml = quill.root.innerHTML;
+        var embedHtml = '';
+        try {
+          embedHtml = buildFacebookEmbed(facebookEmbedInput.value);
+        } catch(err) {
+          e.preventDefault();
+          alert(err.message);
+          return;
+        }
+
+        var preservedEmbeds = '';
+        if(editorHtml.indexOf('facebook.com/plugins/') === -1){
+          preservedEmbeds = extractOriginalFacebookEmbeds(originalPostDetails);
+        }
+
+        hidden.value = editorHtml + preservedEmbeds + embedHtml;
       });
 
       // Drag-and-drop + preview

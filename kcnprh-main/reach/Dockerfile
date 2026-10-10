@@ -1,19 +1,13 @@
 # syntax=docker/dockerfile:1
 
-# Stage 1: Build frontend assets (Tailwind CSS)
+# Stage 1: Build frontend assets (Vue + Tailwind CSS)
 FROM node:18-alpine AS assets
 WORKDIR /build
-# Copy only files needed to build Tailwind first (leverage cache)
-COPY package.json tailwind.config.js ./
-COPY app/static/css/tailwind.input.css ./app/static/css/tailwind.input.css
-# Tailwind needs to scan templates for class usage
-COPY app/templates ./app/templates
+COPY package.json package-lock.json vite.config.js tailwind.config.js ./
+RUN npm ci --no-audit --no-fund
+COPY frontend ./frontend
 COPY app ./app
-RUN npm install --no-audit --no-fund \
-  && npx tailwindcss -c tailwind.config.js \
-       -i app/static/css/tailwind.input.css \
-       -o app/static/css/tailwind.css \
-       --minify
+RUN npm run build
 
 # Base image
 FROM python:3.12-slim AS base
@@ -48,7 +42,8 @@ RUN pip install --upgrade pip \
 # Copy project files
 COPY . .
 
-# Copy built Tailwind CSS from assets stage
+# Copy built frontend assets from assets stage
+COPY --from=assets /build/app/static/vue /app/app/static/vue
 COPY --from=assets /build/app/static/css/tailwind.css /app/app/static/css/tailwind.css
 
 # Environment defaults (override in runtime)

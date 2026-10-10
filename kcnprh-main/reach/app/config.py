@@ -2,10 +2,16 @@ import os
 
 class Config:
     SECRET_KEY = os.getenv("SECRET_KEY", "change-me")
-    SQLALCHEMY_DATABASE_URI = os.getenv(
-        "DATABASE_URL",
-        "sqlite:///instance/reach.sqlite3",
-    )
+    _database_url = os.getenv("DATABASE_URL", "sqlite:///reach.sqlite3")
+    if _database_url.startswith("postgres://"):
+        _database_url = _database_url.replace("postgres://", "postgresql+psycopg2://", 1)
+    SQLALCHEMY_DATABASE_URI = _database_url
+    if _database_url.startswith("sqlite:"):
+        SQLALCHEMY_ENGINE_OPTIONS = {
+            "execution_options": {
+                "schema_translate_map": {"newsportal": None},
+            },
+        }
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     # Flask settings
     DEBUG = os.getenv("FLASK_ENV") == "development"

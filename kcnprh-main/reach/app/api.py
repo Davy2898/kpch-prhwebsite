@@ -5,10 +5,11 @@ from urllib.parse import urlencode
 
 import bleach
 from flask import Blueprint, jsonify, request, url_for
+from flask_wtf.csrf import generate_csrf
 from sqlalchemy import desc, or_
 
-from . import db
-from .models import Category, Comment, Page, Post
+from . import csrf, db, limiter
+from .models import Category, Comment, Page, Post, get_visitor_count, increment_visitor_count
 
 bp = Blueprint("api", __name__, url_prefix="/api")
 
@@ -75,6 +76,8 @@ def site():
             "tagline": "Compassionate care for Kampong Chhnang families",
             "logo": _asset("img/logo.svg"),
             "heroImage": _asset("img/kampongchhnangentry.jpg"),
+            "publicUrl": os.getenv("PUBLIC_URL") or "https://dylan-syntax-checklist-paragraph.trycloudflare.com",
+            "visitorCount": get_visitor_count(),
             "emergencyPhones": ["097 98 12 812", "097 79 75 111"],
             "stats": [
                 {"label": "Service", "value": "24/7"},
@@ -608,7 +611,9 @@ def site():
                 "email": "Kampongchhnangprovincialhospit@gmail.com",
                 "phones": ["(855) 97 98 12 812", "(855) 97 79 75 111"],
                 "hours": "24/7",
-                "facebook": "https://www.facebook.com/share/1AdB33NBfz/?mibextid=wwXIfr",
+                "facebook": "https://www.facebook.com/profile.php?id=100068634422929",
+                "youtube": "https://www.youtube.com/@3k3n0r",
+                "tiktok": "https://www.tiktok.com/@kcnprh",
                 "telegram": "https://t.me/kcnprh2022",
                 "map": "https://maps.app.goo.gl/tpQto9NJxoKUaD5d6",
             },
@@ -679,6 +684,11 @@ def categories():
     return jsonify({"categories": [_category(item) for item in Category.query.order_by(Category.CategoryName).all()]})
 
 
+@bp.get("/csrf")
+def csrf_token():
+    return jsonify({"csrfToken": generate_csrf()})
+
+
 @bp.get("/pages/<string:slug>")
 def page(slug: str):
     page_obj = Page.query.filter(Page.PageName == slug).first()
@@ -698,6 +708,7 @@ def page(slug: str):
 
 
 @bp.post("/appointments")
+@limiter.limit("10 per minute", methods=["POST"])
 def appointment():
     payload = request.get_json(silent=True) or request.form
     name = (payload.get("name") or "").strip()
@@ -738,3 +749,17 @@ def appointment():
             notice = "Appointment saved, but Telegram notification could not be sent."
 
     return jsonify({"message": "Appointment request received.", "notice": notice})
+
+
+@bp.get("/visitor-count")
+def visitor_count():
+    return jsonify({"visitorCount": get_visitor_count()})
+
+
+@bp.post("/track-visit")
+@csrf.exempt
+@limiter.limit("60 per minute")
+def track_visit():
+    count = increment_visitor_count(1)
+    return jsonify({"visitorCount": count, "success": True})
+

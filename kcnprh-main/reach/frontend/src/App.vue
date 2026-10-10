@@ -1,6 +1,7 @@
 <script setup>
-import { computed, onMounted, reactive, ref, watch } from "vue";
+import { computed, nextTick, onMounted, onUnmounted, reactive, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
+import { fallbackPostsData, fallbackSite } from "./fallbackSite";
 import {
   Ambulance,
   ArrowLeft,
@@ -29,18 +30,29 @@ import {
 
 const route = useRoute();
 const router = useRouter();
-const site = ref(null);
-const postsData = ref({ posts: [], trending: [], categories: [], pagination: {} });
+const site = ref(fallbackSite);
+const visitorCount = ref(4022694);
+const postsData = ref(fallbackPostsData());
 const postDetail = ref(null);
 const pageDetail = ref(null);
 const selectedService = ref(null);
-const loading = ref(true);
+const csrfTokenValue = ref("");
+const loading = ref(false);
+const isNavigating = ref(false);
 const menuOpen = ref(false);
 const searchText = ref(route.query.q || "");
 const appointmentStatus = ref(null);
 const appointmentLoading = ref(false);
 const aimNssfOpen = ref(false);
 const aimNssfChecklistOpen = ref(false);
+
+/* ── Lightbox (Facebook-style image viewer) ── */
+const lightboxOpen = ref(false);
+const lightboxImages = ref([]);
+const lightboxIndex = ref(0);
+const postBodyRef = ref(null);
+let touchStartX = 0;
+let touchDeltaX = 0;
 const form = reactive({
   name: "",
   phone: "",
@@ -116,6 +128,8 @@ const pathMode = computed(() => {
   if (route.path.startsWith("/services/")) return "service";
   if (route.path.startsWith("/post/")) return "post";
   if (route.path.startsWith("/page/")) return "page";
+  if (route.path.startsWith("/news") || route.path.startsWith("/updates")) return "news";
+  if (route.path.startsWith("/category/") || route.path.startsWith("/search")) return "news";
   return "home";
 });
 
@@ -138,11 +152,19 @@ const pageTitle = computed(() => {
 });
 
 const updatesHeading = computed(() => {
-  if (route.path.startsWith("/search") || activeCategory.value) return pageTitle.value;
+  if (route.path.startsWith("/search")) return `Search: ${route.query.q || ""}`;
+  if (activeCategory.value) return activeCategory.value.name;
+  if (route.path.startsWith("/news") || route.path.startsWith("/updates")) return "ព័ត៌មាន និងសេចក្តីជូនដំណឹងទាំងអស់ (All News)";
   return "Hospital News & Announcements";
 });
-const featuredPost = computed(() => postsData.value.posts[0] || null);
-const updatePosts = computed(() => postsData.value.posts.slice(featuredPost.value ? 1 : 0));
+const homePosts = computed(() => postsData.value.posts.slice(0, 5));
+const featuredPost = computed(() => (isLanding.value ? homePosts.value[0] : null));
+const updatePosts = computed(() => {
+  if (isLanding.value) {
+    return homePosts.value.slice(1, 5); // Max 4 in grid + 1 featured = 5 posts total on home page
+  }
+  return postsData.value.posts;
+});
 const services = computed(() => site.value?.services || []);
 const emergencyServiceTitles = new Set(["Emergency Ambulance 24/7", "Emergency & ICU", "Inpatient Care / IPD"]);
 const emergencyServices = computed(() => services.value.filter((service) => emergencyServiceTitles.has(service.title)));
@@ -156,7 +178,11 @@ const director = computed(() => leaders.value[0] || null);
 const viceLeaders = computed(() => leaders.value.slice(1));
 const contact = computed(() => site.value?.contact || {});
 // Temporarily hide the Facebook feed. Set this back to true when the feature is needed again.
-const facebookFeedEnabled = false;
+const facebookFeedEnabled = true;
+// Temporarily hide the category filter pills. Set this back to true when ready to use again.
+const categoryPillsEnabled = false;
+// Temporarily hide the news search. Set this back to true when ready to use again.
+const searchEnabled = false;
 const showFacebookFeed = computed(() => facebookFeedEnabled && isLanding.value && Boolean(contact.value?.facebook));
 const facebookFeedUrl = computed(() => {
   if (!contact.value?.facebook) return "";
@@ -173,8 +199,24 @@ const facebookFeedUrl = computed(() => {
   return `https://www.facebook.com/plugins/page.php?${params.toString()}`;
 });
 
+const memoryCache = {
+  site: null,
+  posts: new Map(),
+  postDetail: new Map(),
+  pageDetail: new Map(),
+};
+
 function csrfToken() {
+  if (csrfTokenValue.value) return csrfTokenValue.value;
   return document.querySelector('meta[name="csrf-token"]')?.getAttribute("content") || "";
+}
+
+async function ensureCsrfToken() {
+  const embedded = csrfToken();
+  if (embedded) return embedded;
+  const data = await fetchJson("/api/csrf");
+  csrfTokenValue.value = data.csrfToken || "";
+  return csrfTokenValue.value;
 }
 
 async function fetchJson(url, options) {
@@ -185,42 +227,115 @@ async function fetchJson(url, options) {
   return response.json();
 }
 
-async function loadSite() {
-  site.value = await fetchJson("/api/site");
+async function loadSite(force = false) {
+  if (memoryCache.site && !force) {
+    site.value = memoryCache.site;
+    if (memoryCache.site.visitorCount) {
+      visitorCount.value = memoryCache.site.visitorCount;
+    }
+    return;
+  }
+  try {
+    const data = await fetchJson("/api/site");
+    memoryCache.site = data;
+    site.value = data;
+    if (data.visitorCount) {
+      visitorCount.value = data.visitorCount;
+    }
+  } catch (error) {
+    if (!site.value) {
+      site.value = fallbackSite;
+    }
+  }
 }
 
 async function loadPosts() {
   const params = new URLSearchParams();
   params.set("page", route.query.page || "1");
+  const limit = isLanding.value ? "5" : "12";
+  params.set("per_page", limit);
   if (route.query.q) params.set("q", route.query.q);
   if (categoryId.value) params.set("category_id", String(categoryId.value));
-  postsData.value = await fetchJson(`/api/posts?${params.toString()}`);
+  const cacheKey = params.toString();
+
+  if (memoryCache.posts.has(cacheKey)) {
+    postsData.value = memoryCache.posts.get(cacheKey);
+  }
+
+  try {
+    const data = await fetchJson(`/api/posts?${cacheKey}`);
+    memoryCache.posts.set(cacheKey, data);
+    postsData.value = data;
+  } catch (error) {
+    if (!memoryCache.posts.has(cacheKey)) {
+      postsData.value = fallbackPostsData();
+    }
+  }
 }
 
 async function loadPostDetail() {
-  postDetail.value = null;
-  if (pathMode.value === "post") {
-    const data = await fetchJson(`/api/posts/${route.params.id}`);
+  if (pathMode.value !== "post") {
+    postDetail.value = null;
+    return;
+  }
+  const id = String(route.params.id || "");
+  if (memoryCache.postDetail.has(id)) {
+    postDetail.value = memoryCache.postDetail.get(id);
+    return;
+  }
+  try {
+    const data = await fetchJson(`/api/posts/${id}`);
+    memoryCache.postDetail.set(id, data);
     postDetail.value = data;
+  } catch (error) {
+    postDetail.value = null;
   }
 }
 
 async function loadPageDetail() {
-  pageDetail.value = null;
-  if (pathMode.value === "page") {
-    const data = await fetchJson(`/api/pages/${route.params.slug}`);
+  if (pathMode.value !== "page") {
+    pageDetail.value = null;
+    return;
+  }
+  const slug = String(route.params.slug || "");
+  if (memoryCache.pageDetail.has(slug)) {
+    pageDetail.value = memoryCache.pageDetail.get(slug);
+    return;
+  }
+  try {
+    const data = await fetchJson(`/api/pages/${slug}`);
+    memoryCache.pageDetail.set(slug, data.page);
     pageDetail.value = data.page;
+  } catch (error) {
+    pageDetail.value = null;
   }
 }
 
+let navCounter = 0;
 async function loadAll() {
-  loading.value = true;
+  const currentNav = ++navCounter;
+  isNavigating.value = true;
   try {
-    await loadSite();
-    await loadPosts();
-    await Promise.all([loadPostDetail(), loadPageDetail()]);
+    const promises = [loadSite()];
+    if (pathMode.value === "home" || pathMode.value === "news") {
+      promises.push(loadPosts());
+    }
+    if (pathMode.value === "post") {
+      promises.push(loadPostDetail());
+    } else {
+      postDetail.value = null;
+    }
+    if (pathMode.value === "page") {
+      promises.push(loadPageDetail());
+    } else {
+      pageDetail.value = null;
+    }
+    await Promise.all(promises);
   } finally {
-    loading.value = false;
+    if (currentNav === navCounter) {
+      isNavigating.value = false;
+      loading.value = false;
+    }
   }
 }
 
@@ -320,15 +435,243 @@ function serviceAppointmentLabel(details) {
   return details.appointmentLabel || "កក់ការណាត់ជួប";
 }
 
+/* ── Post Gallery & Lightbox functions ── */
+function formatPostGallery() {
+  if (!postBodyRef.value) return;
+  const container = postBodyRef.value;
+
+  // Avoid re-formatting if already formatted
+  if (container.querySelector(".post-gallery-grid")) return;
+
+  const children = Array.from(container.children);
+  let currentGallery = null;
+
+  for (let i = 0; i < children.length; i++) {
+    const el = children[i];
+
+    // Skip Facebook iframe embeds
+    if (
+      el.classList.contains("facebook-post-embed") ||
+      el.classList.contains("facebook-video-embed") ||
+      el.classList.contains("fb-post-embed") ||
+      el.querySelector("iframe")
+    ) {
+      currentGallery = null;
+      continue;
+    }
+
+    // Check if element is directly an img
+    if (el.tagName === "IMG") {
+      if (!currentGallery) {
+        currentGallery = document.createElement("div");
+        currentGallery.className = "post-gallery-grid";
+        container.insertBefore(currentGallery, el);
+      }
+      currentGallery.appendChild(el);
+      continue;
+    }
+
+    // Check if element is a paragraph or div containing ONLY images (no real text)
+    const imgs = Array.from(el.querySelectorAll("img"));
+    if (imgs.length > 0) {
+      const text = el.textContent.replace(/\u00a0/g, " ").trim();
+      if (text.length === 0) {
+        if (!currentGallery) {
+          currentGallery = document.createElement("div");
+          currentGallery.className = "post-gallery-grid";
+          container.insertBefore(currentGallery, el);
+        }
+        imgs.forEach((img) => {
+          img.removeAttribute("width");
+          img.removeAttribute("height");
+          currentGallery.appendChild(img);
+        });
+        el.remove();
+        continue;
+      }
+    }
+
+    // If it's an empty <p> or <br> between images, skip or remove if more images follow
+    const textOnly = el.textContent.replace(/\u00a0/g, " ").trim();
+    if (textOnly === "" && el.querySelectorAll("img, iframe").length === 0) {
+      let nextHasImages = false;
+      for (let j = i + 1; j < children.length; j++) {
+        const next = children[j];
+        if (
+          next.tagName === "IMG" ||
+          (next.querySelectorAll("img").length > 0 &&
+            next.textContent.replace(/\u00a0/g, " ").trim() === "")
+        ) {
+          nextHasImages = true;
+          break;
+        }
+        if (
+          next.textContent.replace(/\u00a0/g, " ").trim().length > 0 ||
+          next.querySelector("iframe")
+        ) {
+          break;
+        }
+      }
+      if (nextHasImages && currentGallery) {
+        el.remove();
+        continue;
+      }
+    }
+
+    // Normal text paragraph or heading resets current gallery
+    currentGallery = null;
+  }
+
+  // Count items and add count-specific class
+  container.querySelectorAll(".post-gallery-grid").forEach((grid) => {
+    const totalImgs = grid.querySelectorAll("img").length;
+    if (totalImgs === 1) {
+      grid.classList.add("single-image");
+    } else if (totalImgs === 2) {
+      grid.classList.add("two-images");
+    } else {
+      grid.classList.add("multi-images");
+    }
+  });
+}
+
+function collectPostBodyImages() {
+  if (!postBodyRef.value) return;
+  formatPostGallery();
+  const imgs = postBodyRef.value.querySelectorAll("img");
+  const srcs = [];
+  const hasHero = Boolean(postDetail.value?.post?.image);
+  // Include hero image at index 0 if present
+  if (hasHero) {
+    srcs.push(postDetail.value.post.image);
+  }
+  // Collect body images with correct offset
+  const offset = hasHero ? 1 : 0;
+  imgs.forEach((img, i) => {
+    srcs.push(img.src);
+    img.style.cursor = "zoom-in";
+    const idx = i + offset;
+    img.onclick = (e) => {
+      e.preventDefault();
+      openLightbox(idx);
+    };
+  });
+  lightboxImages.value = srcs;
+}
+
+function openLightbox(index) {
+  lightboxIndex.value = index;
+  lightboxOpen.value = true;
+  document.body.style.overflow = "hidden";
+}
+
+function closeLightbox() {
+  lightboxOpen.value = false;
+  document.body.style.overflow = "";
+}
+
+function lightboxPrev() {
+  if (lightboxIndex.value > 0) lightboxIndex.value--;
+  else lightboxIndex.value = lightboxImages.value.length - 1;
+}
+
+function lightboxNext() {
+  if (lightboxIndex.value < lightboxImages.value.length - 1) lightboxIndex.value++;
+  else lightboxIndex.value = 0;
+}
+
+function onLightboxKeydown(e) {
+  if (!lightboxOpen.value) return;
+  if (e.key === "Escape") closeLightbox();
+  if (e.key === "ArrowLeft") lightboxPrev();
+  if (e.key === "ArrowRight") lightboxNext();
+}
+
+function onLightboxTouchStart(e) {
+  touchStartX = e.touches[0].clientX;
+  touchDeltaX = 0;
+}
+
+function onLightboxTouchMove(e) {
+  touchDeltaX = e.touches[0].clientX - touchStartX;
+}
+
+function onLightboxTouchEnd() {
+  if (Math.abs(touchDeltaX) > 50) {
+    if (touchDeltaX > 0) lightboxPrev();
+    else lightboxNext();
+  }
+  touchDeltaX = 0;
+}
+
+/* ── Post Sharing functions ── */
+const postShareUrl = computed(() => {
+  if (typeof window === "undefined") return "";
+  const post = postDetail.value?.post;
+  const isLocal = ["localhost", "127.0.0.1", "0.0.0.0"].includes(window.location.hostname);
+
+  let baseOrigin = window.location.origin;
+  const configuredPublic = site.value?.publicUrl || "https://dylan-syntax-checklist-paragraph.trycloudflare.com";
+  if (isLocal && configuredPublic) {
+    baseOrigin = configuredPublic.replace(/\/+$/, "");
+  }
+
+  if (!post) return `${baseOrigin}${window.location.pathname}`;
+  return `${baseOrigin}/post/${post.id}`;
+});
+
+const shareFacebookUrl = computed(() => {
+  const url = postShareUrl.value;
+  const title = postDetail.value?.post?.title || "";
+  const params = new URLSearchParams({ u: url });
+  if (title) {
+    params.set("quote", title);
+  }
+  return `https://www.facebook.com/sharer/sharer.php?${params.toString()}`;
+});
+
+const shareTelegramUrl = computed(() => {
+  const title = postDetail.value?.post?.title || "";
+  return `https://t.me/share/url?url=${encodeURIComponent(postShareUrl.value)}&text=${encodeURIComponent(title)}`;
+});
+
+const shareLinkedInUrl = computed(() => {
+  return `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(postShareUrl.value)}`;
+});
+
+function openShare(url) {
+  if (typeof window === "undefined" || !url) return;
+  const width = 620;
+  const height = 540;
+  const left = Math.max(0, (window.innerWidth - width) / 2 + window.screenX);
+  const top = Math.max(0, (window.innerHeight - height) / 2 + window.screenY);
+  window.open(
+    url,
+    "_blank",
+    `width=${width},height=${height},left=${left},top=${top},menubar=no,toolbar=no,status=no,resizable=yes`
+  );
+}
+
+const showScrollTop = ref(false);
+
+function onWindowScroll() {
+  showScrollTop.value = window.scrollY > 250;
+}
+
+function scrollToTop() {
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
 async function submitAppointment() {
   appointmentLoading.value = true;
   appointmentStatus.value = null;
   try {
+    const token = await ensureCsrfToken();
     const data = await fetchJson("/api/appointments", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "X-CSRFToken": csrfToken(),
+        "X-CSRFToken": token,
       },
       body: JSON.stringify(form),
     });
@@ -357,7 +700,93 @@ watch(
   }
 );
 
-onMounted(loadAll);
+let visitorPollTimer = null;
+
+async function trackVisitor() {
+  const sessionKey = "kcnprh_visitor_session";
+  const hasVisited = typeof sessionStorage !== "undefined" ? sessionStorage.getItem(sessionKey) : null;
+  try {
+    if (!hasVisited) {
+      if (typeof sessionStorage !== "undefined") {
+        sessionStorage.setItem(sessionKey, "1");
+      }
+      const res = await fetchJson("/api/track-visit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+      if (res?.visitorCount) {
+        visitorCount.value = res.visitorCount;
+        return;
+      }
+    } else {
+      const res = await fetchJson("/api/visitor-count");
+      if (res?.visitorCount) {
+        visitorCount.value = res.visitorCount;
+        return;
+      }
+    }
+  } catch (e) {
+    // Keep current visitorCount on failure
+  }
+}
+
+async function refreshVisitorCount() {
+  try {
+    const res = await fetchJson("/api/visitor-count");
+    if (res?.visitorCount) {
+      visitorCount.value = res.visitorCount;
+    }
+  } catch (e) {}
+}
+
+onMounted(() => {
+  loadAll();
+  trackVisitor();
+  if (typeof window !== "undefined") {
+    visitorPollTimer = setInterval(refreshVisitorCount, 30000);
+  }
+  document.addEventListener("keydown", onLightboxKeydown);
+  window.addEventListener("scroll", onWindowScroll, { passive: true });
+});
+
+onUnmounted(() => {
+  if (visitorPollTimer) clearInterval(visitorPollTimer);
+  document.removeEventListener("keydown", onLightboxKeydown);
+  window.removeEventListener("scroll", onWindowScroll);
+});
+
+// Wire up document head and lightbox click handlers after post body renders
+watch(
+  () => postDetail.value,
+  () => {
+    if (postDetail.value?.post) {
+      const p = postDetail.value.post;
+      if (typeof document !== "undefined") {
+        const siteName = site.value?.khmerName || "មន្ទីរពេទ្យខេត្តកំពង់ឆ្នាំង";
+        document.title = p.title ? `${p.title} | ${siteName}` : siteName;
+
+        const updateMeta = (attr, key, val) => {
+          if (!val) return;
+          let el = document.querySelector(`meta[${attr}="${key}"]`);
+          if (!el) {
+            el = document.createElement("meta");
+            el.setAttribute(attr, key);
+            document.head.appendChild(el);
+          }
+          el.setAttribute("content", val);
+        };
+
+        updateMeta("property", "og:title", p.title);
+        if (p.excerpt) updateMeta("property", "og:description", p.excerpt);
+        if (p.image) updateMeta("property", "og:image", p.image);
+        updateMeta("property", "og:url", window.location.href);
+      }
+      nextTick(() => {
+        setTimeout(collectPostBodyImages, 100);
+      });
+    }
+  }
+);
 </script>
 
 <template>
@@ -373,16 +802,17 @@ onMounted(loadAll);
 
       <nav :class="{ open: menuOpen }" class="nav">
         <RouterLink to="/">Home</RouterLink>
+        <RouterLink to="/news">News</RouterLink>
         <RouterLink to="/about">About</RouterLink>
         <RouterLink to="/contact">Contact</RouterLink>
         <a href="/admin">Admin</a>
-        <form class="mobile-search" @submit.prevent="goSearch">
+        <form v-if="searchEnabled" class="mobile-search" @submit.prevent="goSearch">
           <Search :size="18" />
           <input v-model="searchText" type="search" placeholder="Search news" />
         </form>
       </nav>
 
-      <form class="searchbar" @submit.prevent="goSearch">
+      <form v-if="searchEnabled" class="searchbar" @submit.prevent="goSearch">
         <Search :size="18" />
         <input v-model="searchText" type="search" placeholder="Search news" />
       </form>
@@ -391,11 +821,15 @@ onMounted(loadAll);
         <X v-if="menuOpen" :size="22" />
         <Menu v-else :size="22" />
       </button>
-    </header>
+</header>
 
-    <main v-if="!loading">
+    <div v-if="isNavigating" class="top-progress-bar" role="progressbar" aria-label="Loading">
+      <div class="top-progress-bar-indicator"></div>
+    </div>
+
+    <main class="main-content">
       <section v-if="isLanding" class="hero">
-        <img :src="site?.heroImage" alt="" />
+        <img v-if="site?.heroImage" :src="site.heroImage" alt="" fetchpriority="high" decoding="async" />
         <div class="hero-shade"></div>
         <div class="hero-content">
           <p class="eyebrow"><ShieldCheck :size="18" /> Public Provincial Hospital</p>
@@ -427,18 +861,19 @@ onMounted(loadAll);
             class="emergency-service-card"
             :to="servicePath(service)"
           >
-            <img :src="service.image" :alt="service.title" />
-            <div class="emergency-service-overlay"></div>
-            <div class="emergency-service-content">
-              <span class="emergency-service-icon">
-                <component :is="serviceIcon(service.details.icon)" :size="22" />
+            <div class="emergency-service-image-wrap">
+              <img :src="service.image" :alt="service.title" loading="lazy" decoding="async" />
+              <span class="emergency-service-badge">
+                <component :is="serviceIcon(service.details.icon)" :size="18" />
               </span>
-              <div>
-                <strong>{{ service.khmer }}</strong>
-                <small>{{ service.title }}</small>
-              </div>
+            </div>
+            <div class="emergency-service-content">
+              <strong>{{ service.khmer }}</strong>
+              <span>{{ service.title }}</span>
               <p>{{ service.details.description }}</p>
-              <span class="emergency-service-link">បើកមើលសេវា <ArrowRight :size="15" /></span>
+              <span class="emergency-service-link">
+                ស្វែងយល់បន្ថែម <ArrowRight :size="15" />
+              </span>
             </div>
           </RouterLink>
         </div>
@@ -453,7 +888,7 @@ onMounted(loadAll);
         <div class="service-grid">
           <article v-for="service in regularServices" :key="service.title" class="service-card">
             <div class="service-card-image-wrap">
-              <img :src="service.image" :alt="service.title" />
+              <img :src="service.image" :alt="service.title" loading="lazy" decoding="async" />
             </div>
             <div class="service-card-content">
               <strong>{{ service.khmer }}</strong>
@@ -466,61 +901,79 @@ onMounted(loadAll);
         </div>
       </section>
 
-      <div v-if="selectedService?.details" class="service-modal-backdrop" @click.self="closeService">
-        <section class="service-modal" role="dialog" aria-modal="true" aria-labelledby="service-modal-title">
-          <button class="service-modal-close" type="button" aria-label="Close" @click="closeService">
-            <X :size="21" />
-          </button>
-          <div class="service-modal-icon">
-            <component :is="serviceIcon(selectedService.details.icon)" :size="34" />
-          </div>
-          <div>
-            <p class="eyebrow">{{ serviceIconLabel(selectedService.details) }}</p>
-            <h2 id="service-modal-title">{{ selectedService.details.title }}</h2>
-            <h3>{{ selectedService.details.subtitle }}</h3>
-            <p class="service-modal-khmer">{{ selectedService.details.description }}</p>
-            <p class="service-modal-english">{{ selectedService.details.english }}</p>
-            <div class="service-info-grid">
-              <div>
-                <strong>{{ servicePrimaryLabel(selectedService.details) }}</strong>
-                <span>{{ servicePrimaryValue(selectedService.details) }}</span>
+      <Transition name="modal-bounce">
+        <div v-if="selectedService?.details" class="service-modal-backdrop" @click.self="closeService">
+          <section class="service-modal" role="dialog" aria-modal="true" aria-labelledby="service-modal-title">
+            <button class="service-modal-close" type="button" aria-label="Close" @click="closeService">
+              <X :size="21" />
+            </button>
+            <div class="service-modal-icon">
+              <component :is="serviceIcon(selectedService.details.icon)" :size="34" />
+            </div>
+            <div>
+              <p class="eyebrow">{{ serviceIconLabel(selectedService.details) }}</p>
+              <h2 id="service-modal-title">{{ selectedService.details.title }}</h2>
+              <h3>{{ selectedService.details.subtitle }}</h3>
+              <p class="service-modal-khmer">{{ selectedService.details.description }}</p>
+              <p class="service-modal-english">{{ selectedService.details.english }}</p>
+              <div class="service-info-grid">
+                <div>
+                  <strong>{{ servicePrimaryLabel(selectedService.details) }}</strong>
+                  <span>{{ servicePrimaryValue(selectedService.details) }}</span>
+                </div>
+                <div>
+                  <strong>{{ serviceSecondaryLabel(selectedService.details) }}</strong>
+                  <span>{{ serviceSecondaryValue(selectedService.details) }}</span>
+                </div>
               </div>
-              <div>
-                <strong>{{ serviceSecondaryLabel(selectedService.details) }}</strong>
-                <span>{{ serviceSecondaryValue(selectedService.details) }}</span>
+              <div class="service-modal-actions">
+                <template v-if="selectedService.details.callNow">
+                  <a class="primary-action emergency-call-action" :href="phoneHref(selectedService.details.callNow)">
+                    <Phone :size="18" /> {{ selectedService.details.callLabel }}
+                  </a>
+                  <a class="secondary-detail-action" href="#services" @click.prevent="closeService">
+                    {{ selectedService.details.learnMoreLabel || "ស្វែងយល់បន្ថែម" }}
+                  </a>
+                </template>
+                <template v-else>
+                  <a class="secondary-detail-action" href="#services" @click.prevent="closeService">
+                    {{ selectedService.details.learnMoreLabel || "ស្វែងយល់បន្ថែម" }}
+                  </a>
+                  <RouterLink class="primary-action" to="/contact" @click="closeService">
+                    <component :is="serviceActionIcon(selectedService.details)" :size="18" />
+                    {{ serviceAppointmentLabel(selectedService.details) }}
+                  </RouterLink>
+                </template>
               </div>
             </div>
-            <div class="service-modal-actions">
-              <template v-if="selectedService.details.callNow">
-                <a class="primary-action emergency-call-action" :href="phoneHref(selectedService.details.callNow)">
-                  <Phone :size="18" /> {{ selectedService.details.callLabel }}
-                </a>
-                <a class="secondary-detail-action" href="#services" @click.prevent="closeService">
-                  {{ selectedService.details.learnMoreLabel || "ស្វែងយល់បន្ថែម" }}
-                </a>
-              </template>
-              <template v-else>
-                <a class="secondary-detail-action" href="#services" @click.prevent="closeService">
-                  {{ selectedService.details.learnMoreLabel || "ស្វែងយល់បន្ថែម" }}
-                </a>
-                <RouterLink class="primary-action" to="/contact" @click="closeService">
-                  <component :is="serviceActionIcon(selectedService.details)" :size="18" />
-                  {{ serviceAppointmentLabel(selectedService.details) }}
-                </RouterLink>
-              </template>
-            </div>
-          </div>
-        </section>
-      </div>
+          </section>
+        </div>
+      </Transition>
 
-      <section v-if="pathMode === 'home'" :class="['section', 'news-layout', { 'with-facebook': showFacebookFeed }]">
+      <section v-if="pathMode === 'home' || pathMode === 'news'" class="section news-layout">
         <div class="content-column">
+          <RouterLink v-if="!isLanding" class="back-link" to="/"><ArrowLeft :size="18" /> Back to Home</RouterLink>
           <div class="section-heading">
             <p class="eyebrow"><Newspaper :size="18" /> Hospital Updates</p>
             <h2>{{ updatesHeading }}</h2>
             <span class="section-subtitle">Latest hospital announcements, health education, and public service notices.</span>
           </div>
-          <div class="updates-overview">
+          <div v-if="categoryPillsEnabled && !isLanding && postsData.categories.length" class="news-category-pills">
+            <RouterLink class="category-pill" :class="{ active: !categoryId && !route.query.q }" to="/news">
+              All Updates
+            </RouterLink>
+            <RouterLink
+              v-for="cat in postsData.categories"
+              :key="cat.id"
+              class="category-pill"
+              :class="{ active: categoryId === cat.id }"
+              :to="`/category/${cat.id}`"
+            >
+              {{ cat.name }}
+            </RouterLink>
+          </div>
+
+          <div v-if="isLanding" class="updates-overview">
             <div class="updates-notice">
               <ShieldCheck :size="18" />
               <span>Verified updates from Kampong Chhnang Provincial Referral Hospital for patients, families, and visitors.</span>
@@ -530,7 +983,7 @@ onMounted(loadAll);
               <span><Clock3 :size="15" /> Latest first</span>
             </div>
           </div>
-          <article class="nssf-update-card">
+          <article v-if="isLanding" class="nssf-update-card">
             <div class="nssf-update-banner">
               <span class="news-pill">Hospital Update</span>
               <time>{{ aimNssfUpdate.date }}</time>
@@ -553,61 +1006,63 @@ onMounted(loadAll);
               </div>
             </div>
           </article>
-          <div v-if="aimNssfOpen" class="nssf-update-modal-backdrop" @click.self="aimNssfOpen = false">
-            <section class="nssf-update-modal" role="dialog" aria-modal="true" aria-labelledby="aim-nssf-title">
-              <button class="nssf-update-close" type="button" aria-label="Close update" @click="aimNssfOpen = false">
-                <X :size="21" />
-              </button>
-              <div class="nssf-update-modal-header">
-                <span class="news-pill">AIM NSSF</span>
-                <time>{{ aimNssfUpdate.date }}</time>
-              </div>
-              <h2 id="aim-nssf-title">{{ aimNssfUpdate.title }}</h2>
-              <p class="nssf-update-subtitle">{{ aimNssfUpdate.subtitle }}</p>
-
-              <div class="nssf-update-status-grid">
-                <div>
-                  <CheckCircle2 :size="19" />
-                  <span>Status</span>
-                  <strong>{{ aimNssfUpdate.status }}</strong>
+          <Transition name="modal-bounce">
+            <div v-if="aimNssfOpen" class="nssf-update-modal-backdrop" @click.self="aimNssfOpen = false">
+              <section class="nssf-update-modal" role="dialog" aria-modal="true" aria-labelledby="aim-nssf-title">
+                <button class="nssf-update-close" type="button" aria-label="Close update" @click="aimNssfOpen = false">
+                  <X :size="21" />
+                </button>
+                <div class="nssf-update-modal-header">
+                  <span class="news-pill">AIM NSSF</span>
+                  <time>{{ aimNssfUpdate.date }}</time>
                 </div>
-                <div>
-                  <MapPin :size="19" />
-                  <span>Location</span>
-                  <strong>{{ aimNssfUpdate.location }}</strong>
+                <h2 id="aim-nssf-title">{{ aimNssfUpdate.title }}</h2>
+                <p class="nssf-update-subtitle">{{ aimNssfUpdate.subtitle }}</p>
+
+                <div class="nssf-update-status-grid">
+                  <div>
+                    <CheckCircle2 :size="19" />
+                    <span>Status</span>
+                    <strong>{{ aimNssfUpdate.status }}</strong>
+                  </div>
+                  <div>
+                    <MapPin :size="19" />
+                    <span>Location</span>
+                    <strong>{{ aimNssfUpdate.location }}</strong>
+                  </div>
                 </div>
-              </div>
 
-              <div class="nssf-guide-section">
-                <h3>{{ aimNssfUpdate.stepsTitle }}</h3>
-                <div class="nssf-step-grid">
-                  <article v-for="(step, index) in aimNssfUpdate.steps" :key="step.title">
-                    <span>{{ index + 1 }}</span>
-                    <h4>{{ step.title }}</h4>
-                    <p>{{ step.desc }}</p>
-                  </article>
+                <div class="nssf-guide-section">
+                  <h3>{{ aimNssfUpdate.stepsTitle }}</h3>
+                  <div class="nssf-step-grid">
+                    <article v-for="(step, index) in aimNssfUpdate.steps" :key="step.title">
+                      <span>{{ index + 1 }}</span>
+                      <h4>{{ step.title }}</h4>
+                      <p>{{ step.desc }}</p>
+                    </article>
+                  </div>
                 </div>
-              </div>
 
-              <div class="nssf-guide-section">
-                <h3>{{ aimNssfUpdate.benefitsTitle }}</h3>
-                <ul class="nssf-benefit-list">
-                  <li v-for="benefit in aimNssfUpdate.benefits" :key="benefit">
-                    <CheckCircle2 :size="17" />
-                    <span>{{ benefit }}</span>
-                  </li>
-                </ul>
-              </div>
+                <div class="nssf-guide-section">
+                  <h3>{{ aimNssfUpdate.benefitsTitle }}</h3>
+                  <ul class="nssf-benefit-list">
+                    <li v-for="benefit in aimNssfUpdate.benefits" :key="benefit">
+                      <CheckCircle2 :size="17" />
+                      <span>{{ benefit }}</span>
+                    </li>
+                  </ul>
+                </div>
 
-              <div class="nssf-guide-notes">
-                <p v-for="note in aimNssfUpdate.notes" :key="note">{{ note }}</p>
-              </div>
-            </section>
-          </div>
+                <div class="nssf-guide-notes">
+                  <p v-for="note in aimNssfUpdate.notes" :key="note">{{ note }}</p>
+                </div>
+              </section>
+            </div>
+          </Transition>
           <div v-if="featuredPost" class="featured-grid">
             <RouterLink class="featured-card" :to="featuredPost.url">
               <div class="featured-media">
-                <img v-if="featuredPost.image" :src="featuredPost.image" :alt="featuredPost.title" />
+                <img v-if="featuredPost.image" :src="featuredPost.image" :alt="featuredPost.title" loading="lazy" decoding="async" />
                 <div v-else class="image-fallback">
                   <Newspaper :size="42" />
                 </div>
@@ -624,9 +1079,34 @@ onMounted(loadAll);
             </RouterLink>
           </div>
           <div class="post-grid">
+            <div v-if="pathMode === 'news' && facebookFeedEnabled" class="post-card facebook-card-item">
+              <div class="fb-card-top">
+                <div class="post-card-meta">
+                  <span class="fb-card-pill"><Facebook :size="13" /> Facebook Updates</span>
+                  <time>Real-Time</time>
+                </div>
+                <a :href="contact.facebook || 'https://www.facebook.com/profile.php?id=100068634422929'" target="_blank" rel="noopener">
+                  View Page <ArrowRight :size="13" />
+                </a>
+              </div>
+              <div class="fb-card-frame-wrap">
+                <iframe
+                  title="Latest Facebook posts"
+                  :src="`https://www.facebook.com/plugins/page.php?href=${encodeURIComponent(contact.facebook || 'https://www.facebook.com/profile.php?id=100068634422929')}&tabs=timeline&width=500&height=480&small_header=true&adapt_container_width=true&hide_cover=false&show_facepile=false`"
+                  width="100%"
+                  height="100%"
+                  style="border: none; overflow: hidden; width: 100%; height: 100%; min-height: 440px;"
+                  scrolling="no"
+                  frameborder="0"
+                  allowfullscreen="true"
+                  allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
+                ></iframe>
+              </div>
+            </div>
+
             <RouterLink v-for="post in updatePosts" :key="post.id" class="post-card" :to="post.url">
               <div class="post-card-media">
-                <img v-if="post.image" :src="post.image" :alt="post.title" />
+                <img v-if="post.image" :src="post.image" :alt="post.title" loading="lazy" decoding="async" />
                 <div v-else class="image-fallback compact">
                   <Newspaper :size="28" />
                 </div>
@@ -647,7 +1127,16 @@ onMounted(loadAll);
               <span>News will appear here after content is added in the admin panel.</span>
             </div>
           </div>
-          <div v-if="postsData.pagination.pages > 1" class="pager">
+          <!-- Home page limit: See more button -->
+          <div v-if="isLanding" class="see-more-posts-wrap">
+            <RouterLink class="see-more-posts-btn" to="/news">
+              <span>មើលព័ត៌មានទាំងអស់ ({{ postsData.pagination.total || postsData.posts.length }}) · View More Updates</span>
+              <ArrowRight :size="18" />
+            </RouterLink>
+          </div>
+
+          <!-- Dedicated News page: Full pagination -->
+          <div v-if="!isLanding && postsData.pagination.pages > 1" class="pager">
             <button :disabled="!postsData.pagination.hasPrev" @click="setPage(postsData.pagination.page - 1)">
               <ArrowLeft :size="18" /> Prev
             </button>
@@ -657,31 +1146,6 @@ onMounted(loadAll);
             </button>
           </div>
         </div>
-
-        <aside v-if="showFacebookFeed" class="facebook-feed-panel" aria-labelledby="facebook-feed-title">
-          <div class="facebook-feed-header">
-            <div>
-              <p class="eyebrow"><Facebook :size="18" /> Facebook</p>
-              <h3 id="facebook-feed-title">Real-Time Facebook Updates</h3>
-            </div>
-            <a :href="contact.facebook" target="_blank" rel="noopener">
-              View Page <ArrowRight :size="15" />
-            </a>
-          </div>
-          <div class="facebook-frame-wrap">
-          <iframe
-            title="Latest Facebook posts"
-            :src="facebookFeedUrl"
-            width="500"
-            height="900"
-            style="border: none; overflow: hidden"
-            scrolling="no"
-            frameborder="0"
-            allowfullscreen="true"
-            allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
-          ></iframe>
-          </div>
-        </aside>
 
       </section>
 
@@ -699,7 +1163,7 @@ onMounted(loadAll);
         <RouterLink class="back-link" to="/"><ArrowLeft :size="18" /> Back to services</RouterLink>
         <div class="service-page-hero">
           <div class="service-page-image">
-            <img :src="activeService.image" :alt="activeService.title" />
+            <img :src="activeService.image" :alt="activeService.title" loading="lazy" decoding="async" />
           </div>
           <div class="service-page-copy">
             <p class="eyebrow">{{ serviceIconLabel(activeService.details) }}</p>
@@ -757,7 +1221,7 @@ onMounted(loadAll);
         </div>
         <div v-if="director" class="leaders-top-row">
           <article class="leader-card">
-            <img :src="director.image" :alt="director.name" />
+            <img :src="director.image" :alt="director.name" loading="lazy" decoding="async" />
             <strong>{{ director.khmer }}</strong>
             <span>{{ director.name }}</span>
             <small>{{ director.role }}</small>
@@ -765,7 +1229,7 @@ onMounted(loadAll);
         </div>
         <div class="leaders-grid">
           <article v-for="leader in viceLeaders" :key="leader.name" class="leader-card">
-            <img :src="leader.image" :alt="leader.name" />
+            <img :src="leader.image" :alt="leader.name" loading="lazy" decoding="async" />
             <strong>{{ leader.khmer }}</strong>
             <span>{{ leader.name }}</span>
             <small>{{ leader.role }}</small>
@@ -858,7 +1322,7 @@ onMounted(loadAll);
 
         <aside class="contact-side">
           <div class="contact-panel">
-            <img :src="site?.heroImage" alt="" />
+            <img :src="site?.heroImage" alt="" loading="lazy" decoding="async" />
             <div class="contact-list">
               <a :href="contact.map" target="_blank" rel="noopener"><MapPin :size="19" /> {{ contact.address }}</a>
               <a :href="`mailto:${contact.email}`"><Mail :size="19" /> {{ contact.email }}</a>
@@ -889,11 +1353,24 @@ onMounted(loadAll);
       </section>
 
       <section v-if="pathMode === 'post' && postDetail?.post" class="section post-detail">
-        <RouterLink class="back-link" to="/"><ArrowLeft :size="18" /> Back to news</RouterLink>
-        <img v-if="postDetail.post.image" :src="postDetail.post.image" :alt="postDetail.post.title" />
-        <p class="eyebrow"><Newspaper :size="18" /> {{ postDetail.post.category?.name || "News" }}</p>
-        <h1>{{ postDetail.post.title }}</h1>
-        <div class="post-meta">{{ postDetail.post.date }} · {{ postDetail.post.views }} views</div>
+        <RouterLink class="back-link" to="/news"><ArrowLeft :size="18" /> Back to news</RouterLink>
+        <div v-if="postDetail.post.image" class="post-detail-hero" @click="openLightbox(0)" style="cursor: zoom-in;">
+          <img :src="postDetail.post.image" :alt="postDetail.post.title" loading="eager" decoding="async" />
+          <div class="post-detail-hero-overlay"></div>
+          <div class="post-detail-hero-content">
+            <span class="news-pill">{{ postDetail.post.category?.name || "News" }}</span>
+          </div>
+        </div>
+        <div class="post-detail-header">
+          <p v-if="!postDetail.post.image" class="eyebrow"><Newspaper :size="18" /> {{ postDetail.post.category?.name || "News" }}</p>
+          <h1>{{ postDetail.post.title }}</h1>
+          <div class="post-detail-meta-row">
+            <div class="post-detail-meta-info">
+              <span class="post-detail-date"><CalendarDays :size="15" /> {{ postDetail.post.date }}</span>
+              <span class="post-detail-views"><Eye :size="15" /> {{ postDetail.post.views }} views</span>
+            </div>
+          </div>
+        </div>
         <div v-if="isAimNssfPost" class="aim-post-action-panel">
           <div>
             <strong>{{ aimNssfUpdate.stepsTitle }}</strong>
@@ -903,38 +1380,148 @@ onMounted(loadAll);
             <CheckCircle2 :size="18" /> បើកបញ្ជីឯកសារត្រូវត្រៀម
           </button>
         </div>
-        <div v-if="isAimNssfPost && aimNssfChecklistOpen" class="aim-checklist-backdrop" @click.self="aimNssfChecklistOpen = false">
-          <section class="aim-checklist-modal" role="dialog" aria-modal="true" aria-labelledby="aim-checklist-title">
-            <div class="aim-checklist-header">
-              <div>
-                <span>[ ✓ ]</span>
-                <h2 id="aim-checklist-title">ឯកសារចាំបាច់ត្រូវយកមកជាមួយ</h2>
+        <Transition name="modal-bounce">
+          <div v-if="isAimNssfPost && aimNssfChecklistOpen" class="aim-checklist-backdrop" @click.self="aimNssfChecklistOpen = false">
+            <section class="aim-checklist-modal" role="dialog" aria-modal="true" aria-labelledby="aim-checklist-title">
+              <div class="aim-checklist-header">
+                <div>
+                  <span>[ ✓ ]</span>
+                  <h2 id="aim-checklist-title">ឯកសារចាំបាច់ត្រូវយកមកជាមួយ</h2>
+                </div>
+                <button type="button" aria-label="Close checklist" @click="aimNssfChecklistOpen = false">[ × ]</button>
               </div>
-              <button type="button" aria-label="Close checklist" @click="aimNssfChecklistOpen = false">[ × ]</button>
-            </div>
-            <p class="aim-checklist-intro">
-              សូមរៀបចំឯកសារខាងក្រោមមុនពេលមកដល់ច្រកចុះឈ្មោះ ដើម្បីផ្ទៀងផ្ទាត់ ប.ស.ស។
-            </p>
-            <div class="aim-checklist-progress">
-              <strong>{{ aimNssfReadyCount }} / {{ aimNssfDocuments.length }}</strong>
-              <span>បានត្រៀមរួច</span>
-            </div>
-            <label v-for="document in aimNssfDocuments" :key="document.title" class="aim-document-row">
-              <input v-model="document.checked" type="checkbox" />
-              <div>
-                <strong>{{ document.title }}</strong>
-                <span>{{ document.desc }}</span>
+              <p class="aim-checklist-intro">
+                សូមរៀបចំឯកសារខាងក្រោមមុនពេលមកដល់ច្រកចុះឈ្មោះ ដើម្បីផ្ទៀងផ្ទាត់ ប.ស.ស។
+              </p>
+              <div class="aim-checklist-progress">
+                <strong>{{ aimNssfReadyCount }} / {{ aimNssfDocuments.length }}</strong>
+                <span>បានត្រៀមរួច</span>
               </div>
-            </label>
-            <div class="aim-checklist-footer">
-              <button class="aim-checklist-confirm" type="button" @click="aimNssfChecklistOpen = false">
-                យល់ព្រម
-              </button>
-            </div>
-          </section>
+              <label v-for="document in aimNssfDocuments" :key="document.title" class="aim-document-row">
+                <input v-model="document.checked" type="checkbox" />
+                <div>
+                  <strong>{{ document.title }}</strong>
+                  <span>{{ document.desc }}</span>
+                </div>
+              </label>
+              <div class="aim-checklist-footer">
+                <button class="aim-checklist-confirm" type="button" @click="aimNssfChecklistOpen = false">
+                  យល់ព្រម
+                </button>
+              </div>
+            </section>
+          </div>
+        </Transition>
+        <article ref="postBodyRef" class="post-body" v-html="postDetail.post.body"></article>
+
+        <!-- Post Footer Share Section -->
+        <div class="post-detail-share-footer">
+          <div class="post-share-buttons">
+            <a
+              :href="shareFacebookUrl"
+              class="share-btn share-btn-fb"
+              target="_blank"
+              rel="noopener noreferrer"
+              title="Share to Facebook"
+              @click.prevent="openShare(shareFacebookUrl)"
+            >
+              <span>ចែករំលែក</span>
+              <svg class="share-icon" viewBox="0 0 24 24" fill="currentColor" width="13" height="13">
+                <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+              </svg>
+            </a>
+            <a
+              :href="shareTelegramUrl"
+              class="share-btn share-btn-tg"
+              target="_blank"
+              rel="noopener noreferrer"
+              title="Share to Telegram"
+              @click.prevent="openShare(shareTelegramUrl)"
+            >
+              <span>ចែករំលែក</span>
+              <svg class="share-icon" viewBox="0 0 24 24" fill="currentColor" width="14" height="14">
+                <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+              </svg>
+            </a>
+          </div>
         </div>
-        <article class="post-body" v-html="postDetail.post.body"></article>
       </section>
+
+      <section v-else-if="pathMode === 'post' && isNavigating" class="section post-detail skeleton-view">
+        <div class="skeleton-line short"></div>
+        <div class="skeleton-block"></div>
+        <div class="skeleton-line medium"></div>
+        <div class="skeleton-line long"></div>
+      </section>
+
+      <section v-else-if="pathMode === 'post'" class="section static-page">
+        <RouterLink class="back-link" to="/"><ArrowLeft :size="18" /> Back to news</RouterLink>
+        <h1>Post not found</h1>
+        <article>This news article is not available.</article>
+      </section>
+
+      <!-- Facebook-style Image Lightbox (fixed overlay) -->
+      <Transition name="lightbox-fade">
+        <div
+          v-if="lightboxOpen && lightboxImages.length"
+          class="lightbox-backdrop"
+          @click.self="closeLightbox"
+          @touchstart.passive="onLightboxTouchStart"
+          @touchmove.passive="onLightboxTouchMove"
+          @touchend="onLightboxTouchEnd"
+        >
+          <button class="lightbox-close" type="button" aria-label="Close" @click="closeLightbox">
+            <X :size="24" />
+          </button>
+
+          <button
+            v-if="lightboxImages.length > 1"
+            class="lightbox-arrow lightbox-arrow-left"
+            type="button"
+            aria-label="Previous image"
+            @click="lightboxPrev"
+          >
+            <ArrowLeft :size="28" />
+          </button>
+
+          <div class="lightbox-image-wrap">
+            <Transition name="lightbox-slide" mode="out-in">
+              <img
+                :key="lightboxIndex"
+                :src="lightboxImages[lightboxIndex]"
+                alt=""
+                class="lightbox-image"
+                @click.stop
+              />
+            </Transition>
+          </div>
+
+          <button
+            v-if="lightboxImages.length > 1"
+            class="lightbox-arrow lightbox-arrow-right"
+            type="button"
+            aria-label="Next image"
+            @click="lightboxNext"
+          >
+            <ArrowRight :size="28" />
+          </button>
+
+          <div v-if="lightboxImages.length > 1" class="lightbox-counter">
+            {{ lightboxIndex + 1 }} / {{ lightboxImages.length }}
+          </div>
+
+          <div v-if="lightboxImages.length > 1" class="lightbox-dots">
+            <button
+              v-for="(img, i) in lightboxImages"
+              :key="i"
+              :class="['lightbox-dot', { active: i === lightboxIndex }]"
+              type="button"
+              :aria-label="`Go to image ${i + 1}`"
+              @click="lightboxIndex = i"
+            ></button>
+          </div>
+        </div>
+      </Transition>
 
       <section v-if="pathMode === 'page'" class="section static-page">
         <h1>{{ pageDetail?.title || "Page not found" }}</h1>
@@ -942,21 +1529,111 @@ onMounted(loadAll);
       </section>
     </main>
 
-    <main v-else class="loading-view">
-      <div></div>
-      <span>Loading</span>
-    </main>
+    <footer class="moh-footer">
+      <div class="moh-footer-container">
+        <!-- Column 1: Hospital Name & Contact Info -->
+        <div class="moh-footer-col moh-col-identity">
+          <h3 class="moh-footer-title">{{ site?.khmerName || "មន្ទីរពេទ្យបង្អែកខេត្តកំពង់ឆ្នាំង" }}</h3>
+          <p class="moh-footer-address">{{ contact?.address || "ភូមិទី១ សង្កាត់កំពង់ឆ្នាំង ក្រុងកំពង់ឆ្នាំង ខេត្តកំពង់ឆ្នាំង" }}</p>
+          <div class="moh-footer-contact-item">
+            <strong>Hotlines:</strong>
+            <a :href="`tel:${(contact?.phones?.[0] || '0979812812').replace(/\s+/g, '')}`">{{ contact?.phones?.[0] || "097 981 2812" }}</a>
+            <span v-if="contact?.phones?.[1]"> / </span>
+            <a v-if="contact?.phones?.[1]" :href="`tel:${contact.phones[1].replace(/\s+/g, '')}`">{{ contact.phones[1] }}</a>
+          </div>
+          <div class="moh-footer-contact-item">
+            <strong>Email:</strong>
+            <a :href="`mailto:${contact?.email || 'kcnprh@gmail.com'}`">{{ contact?.email || "kcnprh@gmail.com" }}</a>
+          </div>
+        </div>
 
-    <footer class="footer">
-      <div>
-        <strong>{{ site?.khmerName || "មន្ទីរពេទ្យខេត្តកំពង់ឆ្នាំង" }}</strong>
-        <span>{{ contact.address }}</span>
+        <!-- Column 2: អំពីមន្ទីរពេទ្យ (About) -->
+        <div class="moh-footer-col">
+          <h3 class="moh-footer-title">អំពីមន្ទីរពេទ្យ</h3>
+          <ul class="moh-footer-links">
+            <li>
+              <RouterLink to="/about">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+                <span>ថ្នាក់ដឹកនាំ</span>
+              </RouterLink>
+            </li>
+            <li>
+              <RouterLink to="/about">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/></svg>
+                <span>រចនាសម្ព័ន្ធ</span>
+              </RouterLink>
+            </li>
+            <li>
+              <RouterLink to="/about">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+                <span>បេសកកម្ម និងចក្ខុវិស័យ</span>
+              </RouterLink>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Column 3: ព័ត៌មាន និងសេវាកម្ម (News & Services) -->
+        <div class="moh-footer-col">
+          <h3 class="moh-footer-title">ព័ត៌មាន និងសេវាកម្ម</h3>
+          <ul class="moh-footer-links">
+            <li>
+              <RouterLink to="/news">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"/></svg>
+                <span>ព័ត៌មាន និងសេចក្តីជូនដំណឹង</span>
+              </RouterLink>
+            </li>
+            <li>
+              <RouterLink to="/contact">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V9h14v10zm-7-7h5v5h-5z"/></svg>
+                <span>ទំនាក់ទំនង និងការណាត់ជួប</span>
+              </RouterLink>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Column 4: បណ្តាញសង្គម (Social Networks & Visitor Count) -->
+        <div class="moh-footer-col">
+          <h3 class="moh-footer-title">បណ្តាញសង្គម</h3>
+          <div class="moh-social-icons">
+            <a :href="contact.facebook || 'https://www.facebook.com/profile.php?id=100068634422929'" target="_blank" rel="noopener noreferrer" class="moh-social-btn" title="Facebook">
+              <svg viewBox="0 0 24 24" fill="#0a7c5a" width="18" height="18"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+            </a>
+            <a :href="contact.telegram || 'https://t.me/kcnprh2022'" target="_blank" rel="noopener noreferrer" class="moh-social-btn" title="Telegram">
+              <svg viewBox="0 0 24 24" fill="#0a7c5a" width="18" height="18"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+            </a>
+            <a :href="contact.tiktok || 'https://www.tiktok.com/@kcnprh'" target="_blank" rel="noopener noreferrer" class="moh-social-btn" title="TikTok">
+              <svg viewBox="0 0 24 24" fill="#0a7c5a" width="16" height="16"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64c.298 0 .586.046.86.13V9.4a6.33 6.33 0 0 0-1.07-.09A6.34 6.34 0 0 0 3 15.65a6.34 6.34 0 0 0 10.82 4.47 6.27 6.27 0 0 0 1.96-4.52V8.78a8.18 8.18 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-.96-.21z"/></svg>
+            </a>
+            <a :href="contact.youtube || 'https://www.youtube.com/@3k3n0r'" target="_blank" rel="noopener noreferrer" class="moh-social-btn" title="YouTube">
+              <svg viewBox="0 0 24 24" fill="#0a7c5a" width="18" height="18"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+            </a>
+          </div>
+          <div class="moh-visitor-counter">
+            <span>® ចំនួនអ្នកចូលទស្សនា: <strong>{{ visitorCount }}</strong></span>
+          </div>
+        </div>
       </div>
-      <div>
-        <RouterLink to="/about">About</RouterLink>
-        <RouterLink to="/contact">Contact</RouterLink>
-        <a href="/admin">Admin</a>
+
+      <!-- Bottom Sub-footer -->
+      <div class="moh-sub-footer">
+        <div class="moh-sub-footer-container">
+          <p>2026 © រក្សាសិទ្ធិគ្រប់យ៉ាងដោយ {{ site?.khmerName || "មន្ទីរពេទ្យបង្អែកខេត្តកំពង់ឆ្នាំង" }}</p>
+          <a href="/admin" class="moh-admin-link">គ្រប់គ្រងប្រព័ន្ធ (Admin)</a>
+        </div>
       </div>
     </footer>
+
+    <!-- Back to top floating button -->
+    <button
+      v-show="showScrollTop"
+      class="moh-scroll-to-top"
+      type="button"
+      aria-label="Scroll to top"
+      @click="scrollToTop"
+    >
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#0a7c5a" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="18 15 12 9 6 15"></polyline>
+      </svg>
+    </button>
   </div>
 </template>

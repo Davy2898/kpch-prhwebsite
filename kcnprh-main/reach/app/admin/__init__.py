@@ -2,7 +2,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 from hashlib import md5
 from sqlalchemy import func, or_
 from sqlalchemy.orm import selectinload
-from ..models import Admin, Post, Category, SubCategory, Page, Comment
+from ..models import Admin, Post, Category, SubCategory, Page, Comment, get_visitor_count, set_visitor_count
 from .. import db
 from werkzeug.security import check_password_hash, generate_password_hash
 from werkzeug.utils import secure_filename
@@ -11,15 +11,75 @@ import os
 import uuid
 from PIL import Image
 import bleach
+from urllib.parse import urlparse
 
 bp = Blueprint("admin", __name__, template_folder="../templates/admin")
 
 ALLOWED_IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
 MAX_FEATURED_IMAGE_SIZE = (1600, 1000)
+FACEBOOK_EMBED_HOSTS = {"www.facebook.com", "web.facebook.com", "facebook.com"}
+FACEBOOK_EMBED_PATHS = {"/plugins/post.php", "/plugins/video.php"}
+POST_DETAIL_TAGS = [
+    "p", "br", "strong", "em", "u", "ul", "ol", "li",
+    "blockquote", "a", "h1", "h2", "h3", "h4", "img",
+    "code", "pre", "span", "div", "iframe",
+]
+IFRAME_ATTRIBUTES = {
+    "src", "title", "width", "height", "allow", "allowfullscreen",
+    "frameborder", "scrolling", "loading", "referrerpolicy",
+}
+
+
+def post_detail_attribute_filter(tag: str, name: str, value: str) -> bool:
+    if tag == "a":
+        return name in {"href", "title", "rel", "target"}
+    if tag == "img":
+        return name in {"src", "alt", "title"}
+    if tag == "span":
+        return name == "style"
+    if tag == "div":
+        return name == "class" and any(c in {"facebook-post-embed", "facebook-video-embed", "fb-post-embed", "post-gallery-grid", "single-image", "two-images", "multi-images"} for c in value.split())
+    if tag == "iframe":
+        if name == "src":
+            parsed = urlparse(value)
+            return (
+                parsed.scheme == "https"
+                and parsed.netloc.lower() in FACEBOOK_EMBED_HOSTS
+                and parsed.path in FACEBOOK_EMBED_PATHS
+            )
+        return name in IFRAME_ATTRIBUTES
+    return False
+
+
+def clean_post_details(details: str) -> str:
+    return bleach.clean(
+        details,
+        tags=POST_DETAIL_TAGS,
+        attributes=post_detail_attribute_filter,
+        protocols=["http", "https", "mailto"],
+        strip=True,
+    )
 
 
 def next_id(column):
     return (db.session.query(func.max(column)).scalar() or 0) + 1
+
+
+def compact_post_ids():
+    post_ids = [row[0] for row in db.session.query(Post.id).order_by(Post.id).all()]
+    id_map = {old_id: new_id for new_id, old_id in enumerate(post_ids, start=1) if old_id != new_id}
+    if not id_map:
+        return
+
+    for old_id, new_id in id_map.items():
+        Post.query.filter(Post.id == old_id).update({Post.id: -new_id}, synchronize_session=False)
+        Comment.query.filter(Comment.postId == old_id).update({Comment.postId: -new_id}, synchronize_session=False)
+
+    db.session.flush()
+
+    for old_id, new_id in id_map.items():
+        Post.query.filter(Post.id == -new_id).update({Post.id: new_id}, synchronize_session=False)
+        Comment.query.filter(Comment.postId == -new_id).update({Comment.postId: new_id}, synchronize_session=False)
 
 
 def upload_dir() -> str:
@@ -100,8 +160,21 @@ def dashboard():
         "subcategories": db.session.query(func.count(SubCategory.SubCategoryId)).scalar() or 0,
         "pages": db.session.query(func.count(Page.id)).scalar() or 0,
         "comments_pending": db.session.query(func.count(Comment.id)).filter(Comment.status == 0).scalar() or 0,
+        "visitor_count": get_visitor_count(),
     }
     return render_template("admin/dashboard.html", stats=stats)
+
+
+@bp.post("/settings/visitor-count")
+@login_required
+def update_visitor_count():
+    new_count = request.form.get("visitor_count", type=int)
+    if new_count is not None and new_count >= 0:
+        set_visitor_count(new_count)
+        flash(f"Visitor counter updated to {new_count:,}", "success")
+    else:
+        flash("Invalid visitor count number.", "danger")
+    return redirect(url_for("admin.dashboard"))
 
 
 from .. import limiter
@@ -169,7 +242,7 @@ def posts_list():
     if status in {"1", "0"}:
         query = query.filter(Post.Is_Active == int(status))
 
-    posts = query.order_by(Post.PostingDate.desc()).all()
+    posts = query.order_by(Post.id.asc()).all()
     filters = {
         "q": q,
         "category_id": category_id,
@@ -192,26 +265,12 @@ def posts_list():
 @login_required
 def posts_create():
     if request.method == "POST":
+        compact_post_ids()
         title = request.form.get("PostTitle", "")
         category_id = request.form.get("CategoryId", type=int)
         subcategory_id = request.form.get("SubCategoryId", type=int)
         details = request.form.get("PostDetails", "")
-        # Sanitize HTML to prevent XSS
-        details = bleach.clean(
-            details,
-            tags=[
-                "p", "br", "strong", "em", "u", "ul", "ol", "li",
-                "blockquote", "a", "h1", "h2", "h3", "h4", "img",
-                "code", "pre", "span"
-            ],
-            attributes={
-                "a": ["href", "title", "rel", "target"],
-                "img": ["src", "alt", "title"],
-                "span": ["style"],
-            },
-            protocols=["http", "https", "mailto", "data"],
-            strip=True,
-        )
+        details = clean_post_details(details)
         is_active = 1 if request.form.get("Is_Active") == "1" else 0
         image_file = request.files.get("PostImage")
         filename = None
@@ -252,21 +311,7 @@ def posts_edit(post_id: int):
         post.CategoryId = request.form.get("CategoryId", type=int)
         post.SubCategoryId = request.form.get("SubCategoryId", type=int)
         details = request.form.get("PostDetails", post.PostDetails)
-        post.PostDetails = bleach.clean(
-            details,
-            tags=[
-                "p", "br", "strong", "em", "u", "ul", "ol", "li",
-                "blockquote", "a", "h1", "h2", "h3", "h4", "img",
-                "code", "pre", "span"
-            ],
-            attributes={
-                "a": ["href", "title", "rel", "target"],
-                "img": ["src", "alt", "title"],
-                "span": ["style"],
-            },
-            protocols=["http", "https", "mailto", "data"],
-            strip=True,
-        )
+        post.PostDetails = clean_post_details(details)
         post.Is_Active = 1 if request.form.get("Is_Active") == "1" else 0
         post.lastUpdatedBy = session.get("admin_username")
         image_file = request.files.get("PostImage")
@@ -298,6 +343,8 @@ def posts_delete(post_id: int):
     post = Post.query.get_or_404(post_id)
     old_image = post.PostImage
     db.session.delete(post)
+    db.session.flush()
+    compact_post_ids()
     db.session.commit()
     delete_uploaded_image(old_image)
     flash("Post deleted", "success")
@@ -311,34 +358,12 @@ def posts_upload_image():
     image_file = request.files.get("image")
     if not image_file or not image_file.filename:
         return jsonify({"error": "No image provided"}), 400
-    # basic content-type guard
-    if not (image_file.mimetype or '').startswith('image/'):
-        return jsonify({"error": "Unsupported file type"}), 415
-    # Magic-byte validation using Pillow
     try:
-        image_file.stream.seek(0)
-        with Image.open(image_file.stream) as im:
-            im.verify()
-        image_file.stream.seek(0)
-    except Exception:
-        return jsonify({"error": "Invalid image"}), 415
-    # Sanitize and uniquify filename
-    base = secure_filename(image_file.filename)
-    name, ext = os.path.splitext(base)
-    unique_name = f"{name}_{uuid.uuid4().hex[:8]}{ext}" if ext else f"{name}_{uuid.uuid4().hex[:8]}"
-    upload_dir = current_app.config.get("UPLOAD_FOLDER")
-    try:
-        os.makedirs(upload_dir, exist_ok=True)
-        image_path = os.path.join(upload_dir, unique_name)
-        image_file.save(image_path)
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-    # Serve from /static/uploads/<file> if UPLOAD_FOLDER points there
-    try:
-        url = url_for("static", filename=f"uploads/{unique_name}")
-    except Exception:
-        # Fallback: relative path
-        url = f"/static/uploads/{unique_name}"
+        unique_name = save_featured_image(image_file)
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 415
+
+    url = url_for("static", filename=f"uploads/{unique_name}")
     return jsonify({"url": url}), 200
 
 

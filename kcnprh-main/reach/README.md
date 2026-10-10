@@ -1,39 +1,107 @@
-# Reach (Flask) – Migration of kcnprh
+# Kampong Chhnang PRH Website
 
-A Flask + PostgreSQL rewrite of the existing PHP news portal.
+Vue is the public frontend. Flask provides the API, admin panel, uploads, and production server.
 
-## Setup
-1. Create virtualenv and install dependencies:
+## Local Setup
+
+Navigate to the project directory:
 
 ```bash
-python3 -m venv .venv
-. .venv/bin/activate
-pip install -U pip
+cd kcnprh-main/reach
+```
+
+### Option A: Standard Python (Recommended for any OS)
+```bash
+python -m venv .venv
+# Windows:
+.\.venv\Scripts\activate
+# macOS / Linux:
+source .venv/bin/activate
+
 pip install -r requirements.txt
+npm install
 ```
 
-2. Environment variables
+### Option B: Using uv
+```powershell
+uv venv .venv-win --python 3.12
+uv pip install -r requirements.txt --python .venv-win\Scripts\python.exe
+npm install
+```
 
-The project reads `.env` automatically. A prefilled `.env` is included:
+> **Note on Database**: `reach_seed.sqlite3` is included. When `run_local.py` runs for the first time, it automatically sets up `instance/reach.sqlite3` with all pre-existing hospital posts, categories, and settings.
 
+## Local Development
 
-3. Database migrations
+Start the Flask backend first (Terminal 1):
 
 ```bash
-flask --app wsgi db init
-flask --app wsgi db migrate -m "init"
-flask --app wsgi db upgrade
+python run_local.py
 ```
 
-4. Run the app
+Start the Vue frontend in a second terminal:
 
-```bash
-flask --app wsgi run -p 5001
+```powershell
+npm run dev
 ```
 
-Open http://localhost:5001
+Open only the Vue frontend:
 
-## Notes
-- Models mirror the existing schema (tables: tbladmin, tblcategory, tblsubcategory, tblposts, tblcomments, tblpages, tblusers).
-- Admin login is a placeholder; original passwords were MD5. We will implement secure auth next.
-- UI is minimal Jinja now; we’ll port the existing HTML/CSS from `kcnprh/news` incrementally.
+```text
+http://localhost:5173/
+```
+
+Admin is served by Flask:
+
+```text
+http://localhost:5001/admin/login
+```
+
+## Admin Password
+
+```powershell
+.\.venv-win\Scripts\python.exe reset_admin_password.py "Admin@2026"
+```
+
+Username:
+
+```text
+admin
+```
+
+## Production Build
+
+Run this before hosting or committing built frontend changes:
+
+```powershell
+npm run build
+```
+
+This writes:
+
+- `app/static/vue/assets/app.js`
+- `app/static/vue/assets/app.css`
+- `app/static/css/tailwind.css`
+
+## Production Environment
+
+Set real values on the host. Do not commit `.env`.
+
+```text
+FLASK_ENV=production
+SECRET_KEY=<long-random-secret>
+DATABASE_URL=<postgres-url>
+TELEGRAM_BOT_TOKEN=<optional>
+TELEGRAM_CHAT_ID=<optional>
+```
+
+If `DATABASE_URL` is not set, the app uses local SQLite. For real hosting, use PostgreSQL or another managed database.
+
+## Security Notes
+
+- `.env`, `docker.env`, local databases, virtual environments, caches, and `node_modules` are ignored.
+- Production refuses the default `SECRET_KEY=change-me`.
+- Admin login is rate limited.
+- Appointment API is rate limited.
+- Uploaded post images are validated and rewritten before saving.
+- The public site is the Vue frontend; old Flask public templates were removed.

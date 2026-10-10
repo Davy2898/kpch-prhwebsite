@@ -6,6 +6,10 @@ __pycache__/
 *.pyd
 
 # Environments
+.env
+.env.*
+!.env.sample
+docker.env
 .venv/
 venv/
 env/
@@ -19,6 +23,10 @@ ENV/
 *.egg-info/
 .eggs/
 .cache/
+.npm-cache/
+.uv-cache/
+.uv-python/
+.pytest_cache/
 
 # Local files
 instance/
@@ -33,3 +41,4 @@ build/
 # OS files
 .DS_Store
 Thumbs.db
+nul

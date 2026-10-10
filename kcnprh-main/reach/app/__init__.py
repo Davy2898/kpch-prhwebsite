@@ -61,7 +61,7 @@ def create_app(test_config: dict | None = None) -> Flask:
         from flask import redirect, request, flash, url_for
         flash("Security check failed (CSRF). Please try again.", "danger")
         # Try to go back to referrer or home
-        return redirect(request.referrer or url_for("public.home")), 302
+        return redirect(request.referrer or url_for("frontend.vue_app")), 302
 
     # Security headers (CSP differs in dev vs production)
     @app.after_request
@@ -105,11 +105,9 @@ def create_app(test_config: dict | None = None) -> Flask:
     # Register blueprints
     from .api import bp as api_bp
     from .frontend import bp as frontend_bp
-    from .public import bp as public_bp
     from .admin import bp as admin_bp
     app.register_blueprint(api_bp)
     app.register_blueprint(frontend_bp)
-    app.register_blueprint(public_bp)
     app.register_blueprint(admin_bp, url_prefix="/admin")
 
     # Simple health endpoint
