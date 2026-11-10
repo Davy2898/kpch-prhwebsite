@@ -10,6 +10,14 @@ Navigate to the project directory:
 cd kcnprh-main/reach
 ```
 
+Create your local environment file from the shared template:
+
+```powershell
+Copy-Item .env.sample .env
+```
+
+On macOS or Linux, use `cp .env.sample .env`. Keep `.env` private; share `.env.sample` with teammates instead. Each developer should set their own `SECRET_KEY` and any optional credentials in `.env`.
+
 ### Option A: Standard Python (Recommended for any OS)
 ```bash
 python -m venv .venv
